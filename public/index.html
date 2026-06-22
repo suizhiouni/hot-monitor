@@ -1,0 +1,2315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全网热点监控中心</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f1117;
+            --bg-secondary: #1a1d28;
+            --bg-card: #222533;
+            --bg-card-hover: #2a2e40;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0b0;
+            --text-muted: #6b7185;
+            --accent-red: #ff4757;
+            --accent-orange: #ff9f43;
+            --accent-yellow: #feca57;
+            --accent-green: #26de81;
+            --accent-blue: #4a9eff;
+            --accent-purple: #a55eea;
+            --border-color: #2d3148;
+            --gradient-hot: linear-gradient(135deg, #ff4757, #ff6348);
+            --gradient-rising: linear-gradient(135deg, #ff9f43, #feca57);
+            --gradient-ai: linear-gradient(135deg, #a55eea, #4a9eff);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 32px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff4757, #ff9f43, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--accent-red);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-red);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .update-info {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .refresh-btn {
+            padding: 8px 16px;
+            background: rgba(74, 158, 255, 0.1);
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            border-radius: 8px;
+            color: var(--accent-blue);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(74, 158, 255, 0.2);
+        }
+
+        .refresh-btn.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Ticker Bar */
+        .ticker-bar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            overflow: hidden;
+            height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        .ticker-label {
+            padding: 0 16px;
+            background: var(--accent-red);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .ticker-content {
+            display: flex;
+            animation: ticker 60s linear infinite;
+            white-space: nowrap;
+        }
+
+        .ticker-item {
+            padding: 0 24px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .ticker-item:hover {
+            color: var(--accent-blue);
+        }
+
+        .ticker-item .hot-value {
+            color: var(--accent-red);
+            font-size: 11px;
+            margin-left: 6px;
+        }
+
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* Main Layout */
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 24px 32px;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: var(--bg-secondary);
+            padding: 4px;
+            border-radius: 12px;
+            width: fit-content;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        /* Grid Layout */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 20px;
+        }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: rgba(74, 158, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .card-name {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .card-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .card-body {
+            padding: 12px 0;
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        .card-body::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .card-body::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+
+        /* Hot Item */
+        .hot-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .hot-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .hot-rank {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .hot-rank.top1 { background: var(--gradient-hot); color: white; }
+        .hot-rank.top2 { background: linear-gradient(135deg, #ff9f43, #ffa502); color: white; }
+        .hot-rank.top3 { background: linear-gradient(135deg, #feca57, #f9ca24); color: #333; }
+        .hot-rank.normal { background: var(--bg-secondary); color: var(--text-muted); }
+
+        .hot-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .hot-title {
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-primary);
+        }
+
+        .hot-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .hot-metrics {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .hot-heat {
+            font-size: 12px;
+            color: var(--accent-red);
+            font-weight: 500;
+        }
+
+        .hot-tag {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .tag-hot { background: rgba(255, 71, 87, 0.15); color: var(--accent-red); }
+        .tag-new { background: rgba(38, 222, 129, 0.15); color: var(--accent-green); }
+        .tag-rising { background: rgba(255, 159, 67, 0.15); color: var(--accent-orange); }
+        .tag-recommend { background: rgba(74, 158, 255, 0.15); color: var(--accent-blue); }
+
+        /* AI Prediction Panel */
+        .ai-panel {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid rgba(165, 94, 234, 0.3);
+            overflow: hidden;
+            grid-column: 1 / -1;
+        }
+
+        .ai-panel .card-header {
+            background: linear-gradient(135deg, rgba(165, 94, 234, 0.1), rgba(74, 158, 255, 0.1));
+            border-bottom: 1px solid rgba(165, 94, 234, 0.2);
+        }
+
+        .ai-prediction-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            padding: 20px;
+        }
+
+        .prediction-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .prediction-card:hover {
+            border-color: rgba(165, 94, 234, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .prediction-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .prediction-score {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .score-bar {
+            width: 60px;
+            height: 6px;
+            background: var(--bg-card);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+
+        .score-high { background: var(--accent-red); }
+        .score-medium { background: var(--accent-orange); }
+        .score-low { background: var(--accent-green); }
+
+        .score-text {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .prediction-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .prediction-reason {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .prediction-sources {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .source-tag {
+            padding: 2px 8px;
+            background: rgba(74, 158, 255, 0.1);
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--accent-blue);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px 24px;
+            border: 1px solid var(--border-color);
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .stat-change {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .stat-up { color: var(--accent-red); }
+        .stat-down { color: var(--accent-green); }
+
+        /* Loading */
+        .loading-skeleton {
+            background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-card-hover) 50%, var(--bg-secondary) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+            height: 16px;
+            margin: 8px 20px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Platform filter */
+        .platform-filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            padding: 6px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-chip.active {
+            background: rgba(74, 158, 255, 0.15);
+            border-color: rgba(74, 158, 255, 0.4);
+            color: var(--accent-blue);
+        }
+
+        .filter-chip:hover {
+            border-color: rgba(74, 158, 255, 0.3);
+        }
+
+        /* Category View */
+        .category-header-bar {
+            margin-bottom: 20px;
+        }
+
+        .category-stats {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .category-stat-chip {
+            padding: 6px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .category-stat-chip:hover {
+            border-color: rgba(74, 158, 255, 0.3);
+            background: var(--bg-card-hover);
+        }
+
+        .category-stat-chip .chip-count {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--accent-red);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .category-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .category-section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .category-section-header {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .category-section-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .category-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .category-name {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .category-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .category-section-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .category-count {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .category-heat-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .heat-level-hot {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--accent-red);
+        }
+
+        .heat-level-warm {
+            background: rgba(255, 159, 67, 0.15);
+            color: var(--accent-orange);
+        }
+
+        .heat-level-normal {
+            background: rgba(74, 158, 255, 0.15);
+            color: var(--accent-blue);
+        }
+
+        .category-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 0;
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .category-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .category-item-rank {
+            width: 22px;
+            height: 22px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .category-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .category-item-title {
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.4;
+        }
+
+        .category-item-source {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .category-item-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .category-item-heat {
+            font-size: 12px;
+            color: var(--accent-red);
+            font-weight: 500;
+        }
+
+        .category-trend {
+            font-size: 14px;
+        }
+
+        /* News Feed - Rolling News */
+        .news-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .news-item {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 16px 20px;
+            display: flex;
+            gap: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .news-item:hover {
+            border-color: rgba(74, 158, 255, 0.3);
+            transform: translateX(4px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        }
+
+        .news-item.is-new {
+            animation: newsSlideIn 0.5s ease-out;
+        }
+
+        @keyframes newsSlideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .news-timeline {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+            width: 50px;
+        }
+
+        .news-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .news-time-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            margin: 6px 0;
+            position: relative;
+        }
+
+        .news-time-dot.urgent {
+            background: var(--accent-red);
+            box-shadow: 0 0 8px rgba(255, 71, 87, 0.5);
+            animation: pulse 1.5s infinite;
+        }
+
+        .news-time-dot::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 30px;
+            background: var(--border-color);
+        }
+
+        .news-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .news-source {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .news-source-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .news-source-name {
+            font-size: 12px;
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+
+        .news-source-type {
+            font-size: 11px;
+            padding: 1px 6px;
+            background: rgba(74, 158, 255, 0.1);
+            border-radius: 3px;
+            color: var(--text-muted);
+        }
+
+        .news-title {
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .news-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .news-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .news-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .news-tag {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .news-ai-score {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(165, 94, 234, 0.1);
+            border: 1px solid rgba(165, 94, 234, 0.25);
+            border-radius: 20px;
+            flex-shrink: 0;
+        }
+
+        .news-ai-icon {
+            font-size: 12px;
+        }
+
+        .news-ai-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .news-ai-value {
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .news-ai-value.high { color: var(--accent-red); }
+        .news-ai-value.medium { color: var(--accent-orange); }
+        .news-ai-value.low { color: var(--accent-green); }
+
+        .news-engagement {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .news-engagement span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* News filter bar */
+        .news-filters {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .news-filter-left {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .news-filter-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .news-auto-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: rgba(38, 222, 129, 0.1);
+            border: 1px solid rgba(38, 222, 129, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--accent-green);
+        }
+
+        .news-count-badge {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+            .main-container {
+                padding: 16px;
+            }
+            .ai-prediction-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-bar {
+                flex-direction: column;
+            }
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 13px;
+            color: var(--text-primary);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="logo">🔥 全网热点监控中心</div>
+                <div class="live-badge">
+                    <div class="live-dot"></div>
+                    <span>LIVE</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <span class="update-info" id="updateTime">更新中...</span>
+                <button class="refresh-btn" onclick="refreshAll(true)">🔄 立即刷新</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Ticker Bar -->
+    <div class="ticker-bar">
+        <div class="ticker-label">📢 滚动热点</div>
+        <div style="overflow:hidden;flex:1;">
+            <div class="ticker-content" id="tickerContent">
+                <span class="ticker-item">加载中...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-label">监控平台数</div>
+                <div class="stat-value" style="color: var(--accent-blue);" id="statPlatforms">12+</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">实时热点数</div>
+                <div class="stat-value" style="color: var(--accent-red);" id="statTopics">--</div>
+                <div class="stat-change stat-up" id="statTopicsChange"></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">滚动新闻</div>
+                <div class="stat-value" style="color: var(--accent-orange);" id="statNews">--</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">AI预判爆点</div>
+                <div class="stat-value" style="color: var(--accent-purple);" id="statAI">--</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">上次更新</div>
+                <div class="stat-value" style="color: var(--accent-green); font-size: 18px;" id="statUpdate">--:--</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('all')">🌐 全部热点</button>
+            <button class="tab-btn" onclick="switchTab('category')">📂 垂类分组</button>
+            <button class="tab-btn" onclick="switchTab('news')">📡 滚动新闻</button>
+            <button class="tab-btn" onclick="switchTab('rising')">📈 飙升榜</button>
+            <button class="tab-btn" onclick="switchTab('ai')">🤖 AI预判</button>
+        </div>
+
+        <!-- All Tab -->
+        <div class="tab-content active" id="tab-all">
+            <div class="platform-filters" id="platformFilters"></div>
+            <div class="grid-container" id="hotGrid"></div>
+        </div>
+
+        <!-- Category Tab -->
+        <div class="tab-content" id="tab-category">
+            <div class="category-header-bar">
+                <div class="category-stats" id="categoryStats"></div>
+            </div>
+            <div class="category-container" id="categoryGrid"></div>
+        </div>
+
+        <!-- Rolling News Tab -->
+        <div class="tab-content" id="tab-news">
+            <div class="news-filters">
+                <div class="news-filter-left">
+                    <div class="filter-chip active" onclick="filterNews('all', this)">全部来源</div>
+                    <div class="filter-chip" onclick="filterNews('media', this)">📰 权威媒体</div>
+                    <div class="filter-chip" onclick="filterNews('kol', this)">⭐ KOL/达人</div>
+                    <div class="filter-chip" onclick="filterNews('official', this)">🏢 官方账号</div>
+                    <div class="filter-chip" onclick="filterNews('tech', this)">💻 科技博主</div>
+                    <div class="filter-chip" onclick="filterNews('finance', this)">💰 财经博主</div>
+                </div>
+                <div class="news-filter-right">
+                    <div class="news-auto-badge">
+                        <div class="live-dot" style="width:6px;height:6px;"></div>
+                        <span>实时抓取中</span>
+                    </div>
+                    <span class="news-count-badge" id="newsCount">共 0 条</span>
+                </div>
+            </div>
+            <div class="news-feed" id="newsFeed"></div>
+        </div>
+
+        <!-- Rising Tab -->
+        <div class="tab-content" id="tab-rising">
+            <div class="grid-container" id="risingGrid"></div>
+        </div>
+
+        <!-- AI Tab -->
+        <div class="tab-content" id="tab-ai">
+            <div class="ai-panel">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon" style="background: linear-gradient(135deg, rgba(165,94,234,0.2), rgba(74,158,255,0.2));">🧠</div>
+                        <div>
+                            <div class="card-name">AI 热点预判引擎</div>
+                            <div class="card-meta">基于多平台数据交叉分析，预测下一个全网热点</div>
+                        </div>
+                    </div>
+                    <div class="card-meta" id="aiUpdateTime">分析中...</div>
+                </div>
+                <div class="ai-prediction-grid" id="aiPredictions"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ===== Configuration =====
+        const PLATFORMS = {
+            weibo: {
+                name: '微博热搜',
+                icon: '🔴',
+                color: '#ff4757',
+                api: 'https://weibo.com/ajax/side/hotSearch',
+                parser: 'weibo'
+            },
+            baidu: {
+                name: '百度热搜',
+                icon: '🔵',
+                color: '#4a9eff',
+                api: 'https://top.baidu.com/api/board?platform=wise&tab=realtime',
+                parser: 'baidu'
+            },
+            douyin: {
+                name: '抖音热榜',
+                icon: '🎵',
+                color: '#00f2ea',
+                api: 'https://aweme.snssdk.com/aweme/v1/hot/search/list/',
+                parser: 'douyin'
+            },
+            zhihu: {
+                name: '知乎热榜',
+                icon: '💡',
+                color: '#0084ff',
+                api: 'https://api.zhihu.com/topstory/hot-list',
+                parser: 'zhihu'
+            },
+            toutiao: {
+                name: '头条热榜',
+                icon: '📰',
+                color: '#ff6347',
+                api: 'https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc',
+                parser: 'toutiao'
+            },
+            bilibili: {
+                name: 'B站热榜',
+                icon: '📺',
+                color: '#fb7299',
+                api: 'https://api.bilibili.com/x/web-interface/popular?ps=20&pn=1',
+                parser: 'bilibili'
+            },
+            qqnews: {
+                name: '腾讯新闻',
+                icon: '📋',
+                color: '#4fc3f7',
+                api: 'https://r.inews.qq.com/gw/event/hot_ranking_list?page_size=30',
+                parser: 'qqnews'
+            },
+            weread: {
+                name: '微信读书',
+                icon: '📖',
+                color: '#07c160',
+                api: 'https://weread.qq.com/web/bookListInCategory/rising?rank=1',
+                parser: 'weread'
+            },
+            thepaper: {
+                name: '澎湃新闻',
+                icon: '📄',
+                color: '#c62828',
+                api: 'https://cache.thepaper.cn/contentapi/wwwIndex/rightSidebar',
+                parser: 'thepaper'
+            },
+            hupu: {
+                name: '虎扑热帖',
+                icon: '🏀',
+                color: '#e53935',
+                api: 'https://bbs.hupu.com/api/v1/hot-topic',
+                parser: 'hupu'
+            },
+            tieba: {
+                name: '百度贴吧',
+                icon: '💬',
+                color: '#3f51b5',
+                api: 'https://tieba.baidu.com/hottopic/browse/topicList',
+                parser: 'tieba'
+            },
+            juejin: {
+                name: '掘金热榜',
+                icon: '⚡',
+                color: '#1e80ff',
+                api: 'https://api.juejin.cn/content_api/v1/content/article_rank?category_id=1&type=hot',
+                parser: 'juejin'
+            }
+        };
+
+        // ===== State =====
+        let allData = {};
+        let newsData = [];
+        let newsFilter = 'all';
+        let currentFilter = 'all';
+        let autoRefreshTimer = null;
+        let newsRefreshTimer = null;
+
+        // ===== Data Fetching (Simulated for demo, with real API structure) =====
+        // Note: Due to CORS, we simulate data with realistic structure
+        // In production, use a backend proxy or server-side fetching
+
+        function generateRealisticData() {
+            const now = new Date();
+            const topics = {
+                weibo: [
+                    { title: '端午假期火车票开售', heat: 4892341, url: 'https://s.weibo.com/weibo?q=%23端午假期火车票开售%23', tag: 'hot' },
+                    { title: '上海暴雨红色预警', heat: 3856210, url: 'https://s.weibo.com/weibo?q=%23上海暴雨红色预警%23', tag: 'new' },
+                    { title: '华为新款手机发布', heat: 3542189, url: 'https://s.weibo.com/weibo?q=%23华为新款手机发布%23', tag: 'hot' },
+                    { title: 'A股三大指数集体上涨', heat: 3201458, url: 'https://s.weibo.com/weibo?q=%23A股三大指数集体上涨%23', tag: 'rising' },
+                    { title: '全国高考倒计时10天', heat: 2987654, url: 'https://s.weibo.com/weibo?q=%23全国高考倒计时10天%23', tag: '' },
+                    { title: '某明星官宣恋情', heat: 2765432, url: 'https://s.weibo.com/weibo?q=%23某明星官宣恋情%23', tag: 'new' },
+                    { title: 'AI大模型最新突破', heat: 2543210, url: 'https://s.weibo.com/weibo?q=%23AI大模型最新突破%23', tag: 'rising' },
+                    { title: '男子相亲50次写出恋爱方法论引热议', heat: 2421098, url: 'https://s.weibo.com/weibo?q=%23相亲50次恋爱方法论%23', tag: 'new' },
+                    { title: '新能源汽车销量创新高', heat: 2109876, url: 'https://s.weibo.com/weibo?q=%23新能源汽车销量创新高%23', tag: '' },
+                    { title: '网友晒猫咪搞笑睡姿笑不活了', heat: 1987654, url: 'https://s.weibo.com/weibo?q=%23猫咪搞笑睡姿%23', tag: 'rising' },
+                    { title: '离谱外卖备注大赏', heat: 1876543, url: 'https://s.weibo.com/weibo?q=%23离谱外卖备注%23', tag: '' },
+                    { title: '宝妈分享育儿翻车现场', heat: 1765432, url: 'https://s.weibo.com/weibo?q=%23育儿翻车现场%23', tag: '' }
+                ],
+                baidu: [
+                    { title: '2026年端午节放假安排', heat: 5123456, url: 'https://www.baidu.com/s?wd=2026年端午节放假安排', tag: 'hot' },
+                    { title: '高考志愿填报指南', heat: 4567890, url: 'https://www.baidu.com/s?wd=高考志愿填报指南', tag: 'hot' },
+                    { title: '夏季防暑降温小妙招', heat: 3890123, url: 'https://www.baidu.com/s?wd=夏季防暑降温小妙招', tag: 'rising' },
+                    { title: '上海出台楼市新政', heat: 3456789, url: 'https://www.baidu.com/s?wd=上海出台楼市新政', tag: 'new' },
+                    { title: '端午龙舟赛直播入口', heat: 3234567, url: 'https://www.baidu.com/s?wd=端午龙舟赛直播', tag: '' },
+                    { title: '最新油价调整消息', heat: 2876543, url: 'https://www.baidu.com/s?wd=最新油价调整消息', tag: '' },
+                    { title: '2026世界杯预选赛', heat: 2654321, url: 'https://www.baidu.com/s?wd=2026世界杯预选赛', tag: '' },
+                    { title: '暑期旅游热门目的地攻略', heat: 2432109, url: 'https://www.baidu.com/s?wd=暑期旅游热门目的地', tag: '' },
+                    { title: '宝宝辅食添加顺序科普', heat: 2210987, url: 'https://www.baidu.com/s?wd=宝宝辅食添加顺序', tag: '' },
+                    { title: '口红色号推荐2026夏季', heat: 1989876, url: 'https://www.baidu.com/s?wd=口红色号推荐2026', tag: '' },
+                    { title: '柯基犬怎么养新手指南', heat: 1876543, url: 'https://www.baidu.com/s?wd=柯基犬怎么养', tag: '' },
+                    { title: '异地恋怎么维持感情', heat: 1765432, url: 'https://www.baidu.com/s?wd=异地恋维持感情', tag: '' }
+                ],
+                douyin: [
+                    { title: '端午节创意短视频挑战', heat: 6234567, url: 'https://www.douyin.com/search/端午节创意短视频挑战', tag: 'hot' },
+                    { title: '夏日清凉穿搭推荐', heat: 5123456, url: 'https://www.douyin.com/search/夏日清凉穿搭推荐', tag: 'rising' },
+                    { title: '网红探店翻车合集', heat: 4567890, url: 'https://www.douyin.com/search/探店翻车合集', tag: 'new' },
+                    { title: '毕业季校园回忆', heat: 4321098, url: 'https://www.douyin.com/search/毕业季校园回忆', tag: 'new' },
+                    { title: '表白被拒后的沙雕反应', heat: 3876543, url: 'https://www.douyin.com/search/表白被拒沙雕反应', tag: 'rising' },
+                    { title: '宠物猫咪迷惑行为大赏', heat: 3654321, url: 'https://www.douyin.com/search/猫咪迷惑行为', tag: '' },
+                    { title: '健身打卡30天变化', heat: 3432109, url: 'https://www.douyin.com/search/健身打卡30天变化', tag: '' },
+                    { title: '情侣日常甜蜜互动合集', heat: 3210987, url: 'https://www.douyin.com/search/情侣日常甜蜜', tag: '' },
+                    { title: '职场离谱整活大赏', heat: 2987654, url: 'https://www.douyin.com/search/职场整活大赏', tag: 'rising' },
+                    { title: '宝宝第一次吃柠檬的表情', heat: 2865432, url: 'https://www.douyin.com/search/宝宝吃柠檬表情', tag: '' },
+                    { title: '三分钟搞懂量子力学', heat: 2765432, url: 'https://www.douyin.com/search/三分钟量子力学', tag: '' },
+                    { title: '旅行Vlog 西藏自驾纪实', heat: 2665432, url: 'https://www.douyin.com/search/西藏自驾Vlog', tag: '' }
+                ],
+                zhihu: [
+                    { title: '如何看待AI替代人类工作的趋势？', heat: 2456789, url: 'https://www.zhihu.com/search?q=AI替代人类工作', tag: 'hot' },
+                    { title: '2026年就业市场有哪些新机会？', heat: 2123456, url: 'https://www.zhihu.com/search?q=2026就业市场新机会', tag: 'rising' },
+                    { title: '为什么年轻人越来越恐婚了？', heat: 1987654, url: 'https://www.zhihu.com/search?q=年轻人恐婚', tag: 'new' },
+                    { title: '房价下跌对普通人意味着什么？', heat: 1876543, url: 'https://www.zhihu.com/search?q=房价下跌对普通人的影响', tag: '' },
+                    { title: '有哪些看起来离谱但真实存在的科学知识？', heat: 1765432, url: 'https://www.zhihu.com/search?q=离谱但真实的科学知识', tag: 'rising' },
+                    { title: '有什么高效学习方法推荐？', heat: 1654321, url: 'https://www.zhihu.com/search?q=高效学习方法', tag: '' },
+                    { title: '如何评价最新发布的手机？', heat: 1543210, url: 'https://www.zhihu.com/search?q=最新发布手机评价', tag: '' },
+                    { title: '有哪些让人笑不活了的神回复？', heat: 1432109, url: 'https://www.zhihu.com/search?q=笑不活了的神回复', tag: '' },
+                    { title: '养猫后你的生活发生了什么变化？', heat: 1321098, url: 'https://www.zhihu.com/search?q=养猫后生活变化', tag: '' },
+                    { title: '分手后还能做朋友吗？过来人怎么说', heat: 1210987, url: 'https://www.zhihu.com/search?q=分手后还能做朋友吗', tag: '' }
+                ],
+                toutiao: [
+                    { title: '端午假期天气预报全国速览', heat: 4321098, url: 'https://www.toutiao.com/search/?keyword=端午假期天气', tag: 'hot' },
+                    { title: '多地出台住房公积金新政', heat: 3876543, url: 'https://www.toutiao.com/search/?keyword=住房公积金新政', tag: 'new' },
+                    { title: '国内芯片产业重大突破', heat: 3543210, url: 'https://www.toutiao.com/search/?keyword=国内芯片产业突破', tag: 'rising' },
+                    { title: '全国多地发布高温预警', heat: 3210987, url: 'https://www.toutiao.com/search/?keyword=高温预警', tag: 'new' },
+                    { title: '各地高考报名人数统计', heat: 2987654, url: 'https://www.toutiao.com/search/?keyword=高考报名人数', tag: '' },
+                    { title: '新能源补贴政策延续', heat: 2765432, url: 'https://www.toutiao.com/search/?keyword=新能源补贴政策', tag: '' },
+                    { title: '暑期档电影预售火爆', heat: 2543210, url: 'https://www.toutiao.com/search/?keyword=暑期档电影', tag: '' },
+                    { title: '婆媳关系如何相处引发全网讨论', heat: 2321098, url: 'https://www.toutiao.com/search/?keyword=婆媳关系', tag: 'rising' },
+                    { title: '各地端午特色美食小吃攻略', heat: 2109876, url: 'https://www.toutiao.com/search/?keyword=端午美食攻略', tag: '' },
+                    { title: '幼儿园到底要不要提前学拼音', heat: 1987654, url: 'https://www.toutiao.com/search/?keyword=幼儿园学拼音', tag: '' }
+                ],
+                bilibili: [
+                    { title: '【科技】AI一键生成3D游戏场景', heat: 1876543, url: 'https://search.bilibili.com/all?keyword=AI生成3D游戏场景', tag: 'hot' },
+                    { title: '【动画】2026年7月新番推荐', heat: 1654321, url: 'https://search.bilibili.com/all?keyword=2026年7月新番', tag: 'rising' },
+                    { title: '【游戏】原神5.0版本前瞻', heat: 1543210, url: 'https://search.bilibili.com/all?keyword=原神5.0版本', tag: '' },
+                    { title: '【知识】量子计算入门科普', heat: 1432109, url: 'https://search.bilibili.com/all?keyword=量子计算入门', tag: '' },
+                    { title: '【搞笑】沙雕网友迷惑行为大赏', heat: 1381098, url: 'https://search.bilibili.com/all?keyword=沙雕迷惑行为', tag: 'rising' },
+                    { title: '【鬼畜】名场面合集 笑不活了', heat: 1321098, url: 'https://search.bilibili.com/all?keyword=名场面合集', tag: '' },
+                    { title: '【情感】异地恋三年我们是怎么走过来的', heat: 1210987, url: 'https://search.bilibili.com/all?keyword=异地恋三年', tag: 'new' },
+                    { title: '【萌宠】布偶猫第一次见到镜子的反应', heat: 1109876, url: 'https://search.bilibili.com/all?keyword=布偶猫照镜子', tag: '' },
+                    { title: '【时尚】夏日防晒测评 20款实测', heat: 998765, url: 'https://search.bilibili.com/all?keyword=防晒测评', tag: '' },
+                    { title: '【育儿】新手爸妈带娃踩坑实录', heat: 887654, url: 'https://search.bilibili.com/all?keyword=新手爸妈带娃', tag: '' }
+                ],
+                qqnews: [
+                    { title: '央行宣布降准0.5个百分点', heat: 4567890, url: 'https://new.qq.com/rain/a/央行降准', tag: 'hot' },
+                    { title: '端午假期出行高峰到来', heat: 3876543, url: 'https://new.qq.com/rain/a/端午出行高峰', tag: '' },
+                    { title: '国际局势最新动态', heat: 3432109, url: 'https://new.qq.com/rain/a/国际局势', tag: '' },
+                    { title: '房地产市场回暖信号', heat: 3210987, url: 'https://new.qq.com/rain/a/房地产回暖', tag: 'new' },
+                    { title: '科技股集体大涨', heat: 2987654, url: 'https://new.qq.com/rain/a/科技股大涨', tag: 'rising' },
+                    { title: '教育部发布最新通知', heat: 2765432, url: 'https://new.qq.com/rain/a/教育部通知', tag: '' },
+                    { title: '全国医保改革方案出炉', heat: 2543210, url: 'https://new.qq.com/rain/a/医保改革', tag: '' },
+                    { title: '就业形势分析报告', heat: 2321098, url: 'https://new.qq.com/rain/a/就业形势', tag: '' },
+                    { title: '抑郁症低龄化引关注：如何识别孩子心理问题', heat: 2109876, url: 'https://new.qq.com/rain/a/抑郁症低龄化', tag: 'new' },
+                    { title: '全国各地粽子甜咸之争又来了', heat: 1987654, url: 'https://new.qq.com/rain/a/粽子甜咸之争', tag: '' }
+                ],
+                thepaper: [
+                    { title: '深度丨全球供应链重塑下的中国制造', heat: 2345678, url: 'https://www.thepaper.cn/', tag: 'recommend' },
+                    { title: '调查丨三四线城市消费升级真相', heat: 2123456, url: 'https://www.thepaper.cn/', tag: '' },
+                    { title: '专访丨AI企业家谈未来十年布局', heat: 1987654, url: 'https://www.thepaper.cn/', tag: 'rising' },
+                    { title: '观察丨人口结构变化下的养老挑战', heat: 1876543, url: 'https://www.thepaper.cn/', tag: '' },
+                    { title: '解读丨新能源政策密集出台背后', heat: 1765432, url: 'https://www.thepaper.cn/', tag: '' },
+                    { title: '纪实丨乡村振兴一线见闻', heat: 1654321, url: 'https://www.thepaper.cn/', tag: '' }
+                ],
+                hupu: [
+                    { title: 'NBA总决赛前瞻分析', heat: 1543210, url: 'https://bbs.hupu.com/', tag: 'hot' },
+                    { title: '中超联赛本轮精彩进球', heat: 1321098, url: 'https://bbs.hupu.com/', tag: '' },
+                    { title: '欧冠决赛预测', heat: 1210987, url: 'https://bbs.hupu.com/', tag: 'rising' },
+                    { title: '球员转会最新消息', heat: 1098765, url: 'https://bbs.hupu.com/', tag: 'new' },
+                    { title: '步行街：女朋友嫌彩礼给少了怎么办', heat: 987654, url: 'https://bbs.hupu.com/', tag: 'rising' },
+                    { title: '步行街：职场整活翻车现场', heat: 876543, url: 'https://bbs.hupu.com/', tag: '' }
+                ],
+                tieba: [
+                    { title: '端午节各地习俗大盘点', heat: 1234567, url: 'https://tieba.baidu.com/f?kw=端午节', tag: '' },
+                    { title: '暑假追剧清单推荐', heat: 1123456, url: 'https://tieba.baidu.com/f?kw=追剧', tag: 'rising' },
+                    { title: '2026考研经验交流干货', heat: 1012345, url: 'https://tieba.baidu.com/f?kw=考研', tag: '' },
+                    { title: '相亲对象的离谱操作合集', heat: 956789, url: 'https://tieba.baidu.com/f?kw=相亲', tag: 'new' },
+                    { title: '我家狗子又拆家了', heat: 890123, url: 'https://tieba.baidu.com/f?kw=萌宠', tag: '' },
+                    { title: '奶茶测评：哪家最好喝', heat: 845678, url: 'https://tieba.baidu.com/f?kw=奶茶', tag: '' },
+                    { title: '王者荣耀新赛季上分攻略', heat: 789012, url: 'https://tieba.baidu.com/f?kw=王者荣耀', tag: '' },
+                    { title: '工作中社死瞬间分享', heat: 734567, url: 'https://tieba.baidu.com/f?kw=社死', tag: 'rising' }
+                ],
+                juejin: [
+                    { title: 'React 19新特性深度解析', heat: 876543, url: 'https://juejin.cn/search?query=React19新特性', tag: 'hot' },
+                    { title: 'Rust在大厂的实践经验', heat: 765432, url: 'https://juejin.cn/search?query=Rust大厂实践', tag: '' },
+                    { title: 'AI Agent开发实战指南', heat: 654321, url: 'https://juejin.cn/search?query=AI+Agent开发', tag: 'rising' },
+                    { title: '微服务架构演进之路', heat: 543210, url: 'https://juejin.cn/search?query=微服务架构', tag: '' },
+                    { title: '前端性能优化终极方案', heat: 432109, url: 'https://juejin.cn/search?query=前端性能优化', tag: '' },
+                    { title: 'Go语言高并发编程', heat: 321098, url: 'https://juejin.cn/search?query=Go高并发', tag: '' }
+                ],
+                weread: [
+                    { title: '《人工智能时代》', heat: 567890, url: 'https://weread.qq.com/', tag: 'rising' },
+                    { title: '《认知觉醒》', heat: 456789, url: 'https://weread.qq.com/', tag: '' },
+                    { title: '《亲密关系》', heat: 398765, url: 'https://weread.qq.com/', tag: 'new' },
+                    { title: '《三体：黑暗森林》', heat: 345678, url: 'https://weread.qq.com/', tag: '' },
+                    { title: '《底层逻辑》', heat: 234567, url: 'https://weread.qq.com/', tag: '' },
+                    { title: '《芯片战争》', heat: 212345, url: 'https://weread.qq.com/', tag: 'new' },
+                    { title: '《被讨厌的勇气》', heat: 198765, url: 'https://weread.qq.com/', tag: '' },
+                    { title: '《育儿百科》', heat: 187654, url: 'https://weread.qq.com/', tag: '' }
+                ]
+            };
+
+            // Add some random variation for dynamic feel
+            Object.keys(topics).forEach(platform => {
+                topics[platform].forEach(item => {
+                    item.heat = Math.floor(item.heat * (0.9 + Math.random() * 0.2));
+                });
+            });
+
+            return topics;
+        }
+
+        // ===== Rolling News Data =====
+        function generateRollingNews() {
+            const now = new Date();
+            const sources = [
+                { name: '人民日报', type: 'media', icon: '📰', color: '#c62828', platform: 'weibo', verified: true },
+                { name: '央视新闻', type: 'media', icon: '📺', color: '#1565c0', platform: 'weibo', verified: true },
+                { name: '新华社', type: 'media', icon: '🏛️', color: '#2e7d32', platform: 'weibo', verified: true },
+                { name: '财新网', type: 'finance', icon: '💰', color: '#e65100', platform: 'weibo', verified: true },
+                { name: '第一财经', type: 'finance', icon: '📊', color: '#4a148c', platform: 'weibo', verified: true },
+                { name: '36氪', type: 'tech', icon: '🚀', color: '#0277bd', platform: 'weibo', verified: true },
+                { name: '虎嗅', type: 'tech', icon: '🐯', color: '#f57c00', platform: 'weixin', verified: true },
+                { name: '极客公园', type: 'tech', icon: '⚙️', color: '#00838f', platform: 'weixin', verified: true },
+                { name: '罗翔说刑法', type: 'kol', icon: '⚖️', color: '#5d4037', platform: 'bilibili', verified: true },
+                { name: '何同学', type: 'kol', icon: '📱', color: '#1a237e', platform: 'bilibili', verified: true },
+                { name: '老蒋巨靠谱', type: 'kol', icon: '🎙️', color: '#880e4f', platform: 'douyin', verified: true },
+                { name: '李佳琦', type: 'kol', icon: '💄', color: '#ad1457', platform: 'douyin', verified: true },
+                { name: '华为终端', type: 'official', icon: '📡', color: '#b71c1c', platform: 'weibo', verified: true },
+                { name: '小米公司', type: 'official', icon: '🍊', color: '#e65100', platform: 'weibo', verified: true },
+                { name: '特斯拉中国', type: 'official', icon: '🚗', color: '#263238', platform: 'weibo', verified: true },
+                { name: '中国证券报', type: 'finance', icon: '📈', color: '#1b5e20', platform: 'weixin', verified: true },
+                { name: '澎湃新闻', type: 'media', icon: '🌊', color: '#0d47a1', platform: 'weixin', verified: true },
+                { name: '腾讯科技', type: 'tech', icon: '🔬', color: '#311b92', platform: 'weixin', verified: true },
+                { name: '南方周末', type: 'media', icon: '📋', color: '#004d40', platform: 'weixin', verified: true },
+                { name: '丁香医生', type: 'kol', icon: '🩺', color: '#1b5e20', platform: 'weixin', verified: true },
+            ];
+
+            const newsItems = [
+                {
+                    sourceIdx: 0, title: '国务院常务会议部署稳增长举措：将进一步扩大内需、促进消费',
+                    desc: '会议指出要加大宏观政策调节力度，着力稳市场主体、保就业、促消费，确保经济运行在合理区间。多项具体措施将在近期出台。',
+                    tags: ['政策', '经济'], engagement: { likes: 23400, comments: 5670, shares: 8900 },
+                    url: 'https://weibo.com/rmrb', aiScore: 92, minutesAgo: 3
+                },
+                {
+                    sourceIdx: 5, title: 'OpenAI正式发布GPT-5：多模态能力全面升级，推理速度提升3倍',
+                    desc: 'GPT-5在所有基准测试中全面超越前代，支持实时视频理解和复杂代码生成。首批API接入者反馈惊人，或将重塑AI应用生态。',
+                    tags: ['AI', '科技'], engagement: { likes: 45600, comments: 12300, shares: 18700 },
+                    url: 'https://36kr.com/', aiScore: 96, minutesAgo: 5
+                },
+                {
+                    sourceIdx: 3, title: '央行今日开展5000亿MLF操作：利率下调10个基点至2.35%',
+                    desc: '市场分析认为此次降息幅度超预期，释放稳增长强信号。A股金融板块应声大涨，债市收益率快速下行。',
+                    tags: ['金融', '央行', '降息'], engagement: { likes: 18900, comments: 7800, shares: 11200 },
+                    url: 'https://www.caixin.com/', aiScore: 89, minutesAgo: 8
+                },
+                {
+                    sourceIdx: 12, title: '华为Mate 70系列正式官宣：搭载麒麟9100芯片，6月8日发布',
+                    desc: '华为消费者业务CEO确认新机将采用全新架构芯片，AI能力全面增强。预约量已突破500万台，市场期待度极高。',
+                    tags: ['华为', '手机', '芯片'], engagement: { likes: 67800, comments: 23400, shares: 34500 },
+                    url: 'https://weibo.com/huawei', aiScore: 94, minutesAgo: 12
+                },
+                {
+                    sourceIdx: 9, title: '何同学最新视频：我用AI做了一个能自动拍电影的机器人',
+                    desc: '全程展示从硬件搭建到AI模型训练的完整流程，机器人能自主选景、构图、运镜。播放量2小时破500万。',
+                    tags: ['科技', 'AI', '创作'], engagement: { likes: 89000, comments: 34500, shares: 45600 },
+                    url: 'https://space.bilibili.com/501922460', aiScore: 87, minutesAgo: 15
+                },
+                {
+                    sourceIdx: 1, title: '端午假期首日全国铁路预计发送旅客1850万人次，创历史新高',
+                    desc: '多条热门线路车票售罄，铁路部门加开临客列车256列。自驾出行同比增长35%，部分高速路段现拥堵。',
+                    tags: ['端午', '出行', '铁路'], engagement: { likes: 12300, comments: 3400, shares: 5600 },
+                    url: 'https://weibo.com/cctvnews', aiScore: 82, minutesAgo: 18
+                },
+                {
+                    sourceIdx: 4, title: '独家丨多家头部公募下调管理费率至0.5%，行业格局将重塑',
+                    desc: '消息人士透露易方达、华夏、广发等多家公募已向监管报备费率调整方案，预计下月起正式实施。投资者将直接受益。',
+                    tags: ['基金', '费率', '公募'], engagement: { likes: 8900, comments: 4500, shares: 6700 },
+                    url: 'https://www.yicai.com/', aiScore: 76, minutesAgo: 22
+                },
+                {
+                    sourceIdx: 6, title: '深度：中国AI创业公司2026上半年融资总额超300亿美元，超去年全年',
+                    desc: '大模型赛道继续吸金，具身智能、AI Agent和AI+医疗三个方向成为投资热点。资本市场对中国AI产业信心强劲。',
+                    tags: ['AI', '投资', '创业'], engagement: { likes: 15600, comments: 5600, shares: 9800 },
+                    url: 'https://www.huxiu.com/', aiScore: 83, minutesAgo: 25
+                },
+                {
+                    sourceIdx: 14, title: '特斯拉中国宣布：全系车型降价2-4万元，即日起执行',
+                    desc: '分析认为此举旨在应对国内新能源车企激烈竞价。比亚迪、小鹏等品牌或将跟进调价。新能源车市价格战再度升级。',
+                    tags: ['特斯拉', '降价', '新能源'], engagement: { likes: 56700, comments: 23400, shares: 34500 },
+                    url: 'https://weibo.com/teslamotors', aiScore: 91, minutesAgo: 28
+                },
+                {
+                    sourceIdx: 10, title: '突发：某知名教育机构宣布暂停线下业务，涉及学员超10万人',
+                    desc: '多位家长反映无法正常退费，总部电话无人接听。市场监管部门已介入调查，建议受影响消费者保留相关凭证。',
+                    tags: ['教育', '消费维权'], engagement: { likes: 34500, comments: 18900, shares: 23400 },
+                    url: 'https://www.douyin.com/', aiScore: 88, minutesAgo: 32
+                },
+                {
+                    sourceIdx: 2, title: '我国成功发射新一代载人飞船试验船，计划2027年实现载人登月',
+                    desc: '此次发射验证了多项关键技术，新飞船可搭载7名航天员。中国航天正稳步推进载人月球探测工程。',
+                    tags: ['航天', '科技', '登月'], engagement: { likes: 78900, comments: 12300, shares: 45600 },
+                    url: 'https://weibo.com/xinhuashe', aiScore: 85, minutesAgo: 35
+                },
+                {
+                    sourceIdx: 15, title: '重磅：北交所拟推出转板上市新规，打通多层次资本市场通道',
+                    desc: '征求意见稿显示转板条件将大幅放宽，优质企业有望更快实现沪深上市。北交所概念股盘中集体拉升。',
+                    tags: ['北交所', '资本市场', 'A股'], engagement: { likes: 9800, comments: 4500, shares: 6700 },
+                    url: 'https://weixin.qq.com/', aiScore: 74, minutesAgo: 38
+                },
+                {
+                    sourceIdx: 13, title: '小米汽车SU7 Ultra正式开启预售：百公里加速1.98秒，售价81.49万',
+                    desc: '雷军直播公布配置详情，首批限量5000台已在30分钟内预约满额。小米股价盘中大涨超8%。',
+                    tags: ['小米', '汽车', '新能源'], engagement: { likes: 98700, comments: 45600, shares: 67800 },
+                    url: 'https://weibo.com/xiaomi', aiScore: 93, minutesAgo: 42
+                },
+                {
+                    sourceIdx: 19, title: '研究发现：每天步行8000步以上可降低心血管疾病风险42%',
+                    desc: '发表在《柳叶刀》的大规模队列研究追踪了10万人5年数据。专家建议将日常步行纳入慢病管理方案。',
+                    tags: ['健康', '医学', '运动'], engagement: { likes: 23400, comments: 5600, shares: 12300 },
+                    url: 'https://weixin.qq.com/', aiScore: 68, minutesAgo: 45
+                },
+                {
+                    sourceIdx: 7, title: '极客公园专访马斯克：xAI的下一步是什么？',
+                    desc: '马斯克透露Grok-3模型将在下月发布，训练使用了10万块H200。他预测AGI将在2年内实现。',
+                    tags: ['AI', 'xAI', '马斯克'], engagement: { likes: 34500, comments: 12300, shares: 23400 },
+                    url: 'https://www.geekpark.net/', aiScore: 86, minutesAgo: 50
+                },
+                {
+                    sourceIdx: 16, title: '多省发布2026高考注意事项：AI监考系统首次全面应用',
+                    desc: '今年高考将首次在全国范围内启用AI智能监考系统，可实时检测异常行为。考场5G信号屏蔽范围扩大至200米。',
+                    tags: ['高考', 'AI', '教育'], engagement: { likes: 18900, comments: 7800, shares: 11200 },
+                    url: 'https://www.thepaper.cn/', aiScore: 80, minutesAgo: 55
+                },
+                {
+                    sourceIdx: 11, title: '李佳琦直播间端午专场GMV破3亿：国潮粽子礼盒成爆款',
+                    desc: '直播间在线人数峰值突破800万，多款联名粽子礼盒秒罄。国潮IP与传统节日的结合成为今年消费新趋势。',
+                    tags: ['电商', '端午', '直播'], engagement: { likes: 45600, comments: 23400, shares: 12300 },
+                    url: 'https://www.douyin.com/', aiScore: 72, minutesAgo: 58
+                },
+                {
+                    sourceIdx: 18, title: '独家调查：外卖骑手日均配送时间延长至14小时，算法困局何解？',
+                    desc: '记者深入调研发现平台算法持续压缩配送时间，骑手收入不升反降。专家呼吁建立行业性算法审计机制。',
+                    tags: ['社会', '算法', '劳动权益'], engagement: { likes: 56700, comments: 34500, shares: 23400 },
+                    url: 'https://weixin.qq.com/', aiScore: 79, minutesAgo: 62
+                },
+                {
+                    sourceIdx: 17, title: '腾讯混元大模型开源最新版本：参数量达万亿级，中文能力全球领先',
+                    desc: '混元MoE模型在所有中文基准测试中排名第一，代码生成能力接近GPT-4 Turbo。开源社区24小时内Star数突破2万。',
+                    tags: ['AI', '开源', '腾讯'], engagement: { likes: 34500, comments: 9800, shares: 18900 },
+                    url: 'https://weixin.qq.com/', aiScore: 84, minutesAgo: 68
+                },
+                {
+                    sourceIdx: 8, title: '罗翔：从法律角度看AI换脸诈骗——我们该如何保护自己？',
+                    desc: '详细解读最新司法解释对深度伪造的定性，并给出普通人防骗的实操建议。视频发布3小时播放量破千万。',
+                    tags: ['法律', 'AI', '防诈'], engagement: { likes: 123000, comments: 45600, shares: 67800 },
+                    url: 'https://space.bilibili.com/517327498', aiScore: 81, minutesAgo: 72
+                },
+            ];
+
+            // Add time stamps
+            return newsItems.map(item => {
+                const source = sources[item.sourceIdx];
+                const publishTime = new Date(now.getTime() - item.minutesAgo * 60000);
+                return {
+                    ...item,
+                    source,
+                    publishTime,
+                    timeStr: formatTimeAgo(item.minutesAgo)
+                };
+            });
+        }
+
+        function formatTimeAgo(minutes) {
+            if (minutes < 1) return '刚刚';
+            if (minutes < 60) return `${minutes}分钟前`;
+            if (minutes < 1440) return `${Math.floor(minutes / 60)}小时前`;
+            return `${Math.floor(minutes / 1440)}天前`;
+        }
+
+        function calculateAIScore(item) {
+            // AI scoring logic based on multiple factors
+            let score = item.aiScore || 50;
+
+            // Boost for high engagement velocity
+            const engagementTotal = (item.engagement?.likes || 0) + (item.engagement?.comments || 0) * 3 + (item.engagement?.shares || 0) * 5;
+            const velocityBoost = Math.min(engagementTotal / item.minutesAgo / 1000, 15);
+            score = Math.min(score + velocityBoost, 99);
+
+            return Math.round(score);
+        }
+
+        function renderNewsFeed(filter = 'all') {
+            const container = document.getElementById('newsFeed');
+            if (!container) return;
+
+            let filteredNews = newsData;
+            if (filter !== 'all') {
+                filteredNews = newsData.filter(item => item.source.type === filter);
+            }
+
+            document.getElementById('newsCount').textContent = `共 ${filteredNews.length} 条`;
+
+            container.innerHTML = filteredNews.map((item, idx) => {
+                const score = calculateAIScore(item);
+                const scoreClass = score >= 85 ? 'high' : score >= 70 ? 'medium' : 'low';
+                const dotClass = score >= 90 ? 'urgent' : '';
+
+                return `
+                    <a class="news-item ${idx < 3 ? 'is-new' : ''}" href="${item.url}" target="_blank" rel="noopener">
+                        <div class="news-timeline">
+                            <div class="news-time">${item.timeStr}</div>
+                            <div class="news-time-dot ${dotClass}"></div>
+                        </div>
+                        <div class="news-body">
+                            <div class="news-source">
+                                <div class="news-source-avatar" style="background:${item.source.color}22;color:${item.source.color};">${item.source.icon}</div>
+                                <span class="news-source-name">${item.source.name}</span>
+                                <span class="news-source-type">${getSourceTypeLabel(item.source.type)}</span>
+                            </div>
+                            <div class="news-title">${item.title}</div>
+                            <div class="news-desc">${item.desc}</div>
+                            <div class="news-footer">
+                                <div class="news-tags">
+                                    ${item.tags.map(t => `<span class="news-tag tag-${score >= 85 ? 'hot' : score >= 70 ? 'rising' : 'recommend'}">${t}</span>`).join('')}
+                                </div>
+                                <div class="news-ai-score">
+                                    <span class="news-ai-icon">🧠</span>
+                                    <span class="news-ai-label">爆点概率</span>
+                                    <span class="news-ai-value ${scoreClass}">${score}%</span>
+                                </div>
+                            </div>
+                            <div class="news-engagement" style="margin-top:8px;">
+                                <span>👍 ${formatEngagement(item.engagement?.likes)}</span>
+                                <span>💬 ${formatEngagement(item.engagement?.comments)}</span>
+                                <span>🔄 ${formatEngagement(item.engagement?.shares)}</span>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        }
+
+        function getSourceTypeLabel(type) {
+            const map = { media: '权威媒体', kol: 'KOL', official: '官方', tech: '科技', finance: '财经' };
+            return map[type] || type;
+        }
+
+        function formatEngagement(num) {
+            if (!num) return '0';
+            if (num >= 10000) return (num / 10000).toFixed(1) + 'w';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+            return num.toString();
+        }
+
+        function filterNews(type, el) {
+            newsFilter = type;
+            document.querySelectorAll('#tab-news .filter-chip').forEach(c => c.classList.remove('active'));
+            if (el) el.classList.add('active');
+            renderNewsFeed(type);
+        }
+
+        // ===== AI Prediction Engine =====
+        function generateAIPredictions(data) {
+            // Cross-platform analysis: find topics appearing on multiple platforms
+            const allTopics = [];
+            Object.entries(data).forEach(([platform, items]) => {
+                items.forEach(item => {
+                    allTopics.push({ ...item, platform });
+                });
+            });
+
+            // Keyword extraction and matching
+            const keywords = {};
+            allTopics.forEach(item => {
+                const words = extractKeywords(item.title);
+                words.forEach(w => {
+                    if (!keywords[w]) keywords[w] = { count: 0, platforms: new Set(), items: [], totalHeat: 0 };
+                    keywords[w].count++;
+                    keywords[w].platforms.add(item.platform);
+                    keywords[w].items.push(item);
+                    keywords[w].totalHeat += item.heat;
+                });
+            });
+
+            // Score and rank predictions
+            const predictions = [];
+            Object.entries(keywords).forEach(([keyword, info]) => {
+                if (info.platforms.size >= 2 || (info.count >= 2 && info.totalHeat > 5000000)) {
+                    const platformScore = info.platforms.size * 25;
+                    const heatScore = Math.min(info.totalHeat / 10000000 * 30, 30);
+                    const freshness = info.items.some(i => i.tag === 'new' || i.tag === 'rising') ? 20 : 0;
+                    const score = Math.min(platformScore + heatScore + freshness + Math.random() * 10, 98);
+
+                    predictions.push({
+                        keyword,
+                        title: info.items[0].title,
+                        score: Math.round(score),
+                        platforms: [...info.platforms],
+                        totalHeat: info.totalHeat,
+                        reason: generateReason(info, keyword),
+                        url: info.items[0].url
+                    });
+                }
+            });
+
+            // Add AI-generated speculative predictions
+            const speculativePredictions = [
+                {
+                    keyword: '端午',
+                    title: '端午假期相关话题将持续霸榜',
+                    score: 95,
+                    platforms: ['weibo', 'baidu', 'douyin', 'toutiao'],
+                    totalHeat: 15000000,
+                    reason: '端午假期临近，多平台已出现假期相关话题，预计出行、美食、传统文化类内容将在节假日期间全网爆发',
+                    url: 'https://s.weibo.com/weibo?q=%23端午节%23'
+                },
+                {
+                    keyword: 'AI',
+                    title: 'AI技术突破将引爆科技圈讨论',
+                    score: 88,
+                    platforms: ['zhihu', 'bilibili', 'juejin', 'weibo'],
+                    totalHeat: 8500000,
+                    reason: '多个AI话题同时在技术社区和大众平台上升，结合近期大模型发布密集，预判AI相关事件可能引发全网讨论',
+                    url: 'https://s.weibo.com/weibo?q=%23AI%23'
+                },
+                {
+                    keyword: '高考',
+                    title: '高考倒计时相关内容将爆发式增长',
+                    score: 92,
+                    platforms: ['baidu', 'weibo', 'toutiao', 'zhihu'],
+                    totalHeat: 12000000,
+                    reason: '距2026高考仅10天，历年同期搜索量暴增3-5倍，预计加油祝福、备考技巧、志愿填报类内容将全面爆发',
+                    url: 'https://www.baidu.com/s?wd=2026高考'
+                },
+                {
+                    keyword: '楼市',
+                    title: '房地产政策讨论热度持续攀升',
+                    score: 78,
+                    platforms: ['toutiao', 'qqnews', 'zhihu'],
+                    totalHeat: 6000000,
+                    reason: '多地密集出台楼市新政，叠加央行降准，房产话题在新闻和问答平台热度显著上升，有全网扩散趋势',
+                    url: 'https://www.baidu.com/s?wd=楼市新政'
+                },
+                {
+                    keyword: '新能源',
+                    title: '新能源产业链消息或引发市场关注',
+                    score: 72,
+                    platforms: ['toutiao', 'qqnews', 'weibo'],
+                    totalHeat: 5500000,
+                    reason: '新能源汽车销量数据、补贴政策双重刺激，结合A股新能源板块异动，预计将引发投资者和大众广泛讨论',
+                    url: 'https://www.baidu.com/s?wd=新能源汽车'
+                }
+            ];
+
+            predictions.push(...speculativePredictions);
+
+            // Sort by score
+            predictions.sort((a, b) => b.score - a.score);
+            return predictions.slice(0, 8);
+        }
+
+        function extractKeywords(title) {
+            const stopWords = ['的', '了', '在', '是', '有', '和', '与', '对', '为', '这', '那', '也', '就', '都', '而', '及', '着', '或', '一个', '没有', '什么', '怎么', '如何', '哪些'];
+            // Simple keyword extraction - split by common delimiters
+            const words = title.replace(/[【】《》丨｜\s·]/g, ' ').split(' ').filter(w => w.length >= 2 && !stopWords.includes(w));
+            return words;
+        }
+
+        function generateReason(info, keyword) {
+            const platformNames = [...info.platforms].map(p => PLATFORMS[p]?.name || p).join('、');
+            if (info.platforms.size >= 3) {
+                return `已在${info.platforms.size}个平台出现（${platformNames}），跨平台传播力强，热度总值${formatHeat(info.totalHeat)}，预计将持续发酵`;
+            } else if (info.platforms.size >= 2) {
+                return `同时在${platformNames}上出现，话题有跨平台扩散趋势，综合热度${formatHeat(info.totalHeat)}`;
+            }
+            return `单平台热度极高（${formatHeat(info.totalHeat)}），有破圈潜力`;
+        }
+
+        // ===== Rendering =====
+        function renderHotGrid(data, containerId, filterPlatform = 'all') {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            let html = '';
+            const platforms = filterPlatform === 'all' ? Object.keys(data) : [filterPlatform];
+
+            platforms.forEach(platform => {
+                const config = PLATFORMS[platform];
+                const items = data[platform];
+                if (!config || !items) return;
+
+                html += `
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: ${config.color}22;">${config.icon}</div>
+                                <div>
+                                    <div class="card-name">${config.name}</div>
+                                    <div class="card-meta">共 ${items.length} 条热点</div>
+                                </div>
+                            </div>
+                            <div class="card-meta">${new Date().toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</div>
+                        </div>
+                        <div class="card-body">
+                            ${items.map((item, i) => `
+                                <a class="hot-item" href="${item.url}" target="_blank" rel="noopener">
+                                    <div class="hot-rank ${i < 1 ? 'top1' : i < 2 ? 'top2' : i < 3 ? 'top3' : 'normal'}">${i + 1}</div>
+                                    <div class="hot-content">
+                                        <div class="hot-title">${item.title}</div>
+                                    </div>
+                                    <div class="hot-metrics">
+                                        <span class="hot-heat">${formatHeat(item.heat)}</span>
+                                        ${item.tag ? `<span class="hot-tag tag-${item.tag}">${getTagText(item.tag)}</span>` : ''}
+                                    </div>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderRisingGrid(data) {
+            const container = document.getElementById('risingGrid');
+            if (!container) return;
+
+            // Collect all rising/new items across platforms
+            const risingItems = [];
+            Object.entries(data).forEach(([platform, items]) => {
+                items.forEach(item => {
+                    if (item.tag === 'rising' || item.tag === 'new') {
+                        risingItems.push({ ...item, platform });
+                    }
+                });
+            });
+
+            risingItems.sort((a, b) => b.heat - a.heat);
+
+            let html = `
+                <div class="card" style="grid-column: 1 / -1;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon" style="background: rgba(255,159,67,0.2);">📈</div>
+                            <div>
+                                <div class="card-name">全网飙升热点</div>
+                                <div class="card-meta">综合各平台新上榜和上升趋势话题</div>
+                            </div>
+                        </div>
+                        <div class="card-meta">共 ${risingItems.length} 条飙升</div>
+                    </div>
+                    <div class="card-body" style="max-height: 600px;">
+                        ${risingItems.map((item, i) => `
+                            <a class="hot-item" href="${item.url}" target="_blank" rel="noopener">
+                                <div class="hot-rank ${i < 1 ? 'top1' : i < 2 ? 'top2' : i < 3 ? 'top3' : 'normal'}">${i + 1}</div>
+                                <div class="hot-content">
+                                    <div class="hot-title">${item.title}</div>
+                                    <div class="hot-subtitle">${PLATFORMS[item.platform]?.icon || ''} ${PLATFORMS[item.platform]?.name || item.platform}</div>
+                                </div>
+                                <div class="hot-metrics">
+                                    <span class="hot-heat">${formatHeat(item.heat)}</span>
+                                    <span class="hot-tag tag-${item.tag}">${getTagText(item.tag)}</span>
+                                </div>
+                            </a>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function renderAIPredictions(predictions) {
+            const container = document.getElementById('aiPredictions');
+            if (!container) return;
+
+            container.innerHTML = predictions.map(pred => `
+                <div class="prediction-card" onclick="window.open('${pred.url}', '_blank')">
+                    <div class="prediction-header">
+                        <div class="prediction-score">
+                            <div class="score-bar">
+                                <div class="score-fill ${pred.score >= 85 ? 'score-high' : pred.score >= 65 ? 'score-medium' : 'score-low'}" 
+                                     style="width: ${pred.score}%"></div>
+                            </div>
+                            <span class="score-text" style="color: ${pred.score >= 85 ? 'var(--accent-red)' : pred.score >= 65 ? 'var(--accent-orange)' : 'var(--accent-green)'}">
+                                ${pred.score}%
+                            </span>
+                        </div>
+                    </div>
+                    <div class="prediction-title">${pred.title}</div>
+                    <div class="prediction-reason">${pred.reason}</div>
+                    <div class="prediction-sources">
+                        ${pred.platforms.map(p => `<span class="source-tag">${PLATFORMS[p]?.icon || '📌'} ${PLATFORMS[p]?.name || p}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('aiUpdateTime').textContent = `分析时间: ${new Date().toLocaleTimeString('zh-CN')}`;
+            document.getElementById('statAI').textContent = predictions.filter(p => p.score >= 80).length;
+        }
+
+        function renderTicker(data) {
+            const container = document.getElementById('tickerContent');
+            let items = [];
+            Object.entries(data).forEach(([platform, list]) => {
+                list.slice(0, 3).forEach(item => {
+                    items.push(`<span class="ticker-item" onclick="window.open('${item.url}','_blank')">${PLATFORMS[platform]?.icon || '📌'} ${item.title}<span class="hot-value">${formatHeat(item.heat)}</span></span>`);
+                });
+            });
+            // Duplicate for seamless scroll
+            container.innerHTML = items.join('') + items.join('');
+        }
+
+        function renderPlatformFilters() {
+            const container = document.getElementById('platformFilters');
+            let html = `<div class="filter-chip active" onclick="filterPlatform('all')">全部</div>`;
+            Object.entries(PLATFORMS).forEach(([key, config]) => {
+                html += `<div class="filter-chip" onclick="filterPlatform('${key}')">${config.icon} ${config.name}</div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        // ===== Category Classification =====
+        const CATEGORIES = {
+            tech: {
+                name: '科技数码',
+                icon: '💻',
+                color: '#4a9eff',
+                keywords: ['AI', '人工智能', '大模型', '芯片', '手机', '华为', '小米', '苹果', 'iPhone', '机器人', '科技', '数码', '电脑', '5G', '量子', 'GPT', '算法', '代码', 'React', 'Rust', 'Go', '前端', '后端', '开源', '互联网', '程序员', '开发', '编程', '自动驾驶', '电池', 'AGI', '模型', '训练', 'Claude', 'OpenAI', '智能', '半导体', '光刻', '服务器', 'GPU', '算力'],
+                desc: 'AI/芯片/手机/互联网/编程'
+            },
+            finance: {
+                name: '财经商业',
+                icon: '📊',
+                color: '#ff9f43',
+                keywords: ['A股', '股票', '基金', '央行', '降准', '降息', '房价', '楼市', '房地产', '油价', '金融', '银行', '投资', '理财', '创业', '融资', '上市', 'IPO', '财报', '营收', '利润', '市值', '美元', '汇率', '经济', 'GDP', '通胀', '公募', '私募', '债', '北交所', '科创板', '费率', '补贴', '收购', '并购', '估值', '牛市', '熊市', '涨停', '跌停', '大宗商品', '黄金', '比特币', '加密货币'],
+                desc: '股市/基金/楼市/商业/投资'
+            },
+            entertainment: {
+                name: '娱乐八卦',
+                icon: '🎬',
+                color: '#a55eea',
+                keywords: ['明星', '恋情', '电影', '电视剧', '综艺', '音乐', '演唱会', '偶像', '官宣', '追剧', '票房', '暑期档', '导演', '演员', '国潮', '选秀', '粉丝', '热播', '颁奖', '红毯', '绯闻', '分手', '结婚', '离婚', '出轨', '塌房', '代言', '发歌', '专辑', 'MV'],
+                desc: '明星/影视/综艺/八卦/音乐'
+            },
+            gaming: {
+                name: '游戏动漫',
+                icon: '🎮',
+                color: '#6c5ce7',
+                keywords: ['游戏', '原神', '崩坏', '王者荣耀', '英雄联盟', 'LOL', '鬼畜', '动画', '新番', '漫画', 'cos', '二次元', 'Steam', '手游', '端游', 'Switch', 'PS5', 'Xbox', '电竞', '主播', '开服', '版本', '角色', '皮肤', '抽卡', 'PVP', '剧情', 'DLC'],
+                desc: '手游/端游/电竞/动漫/二次元'
+            },
+            emotion: {
+                name: '情感两性',
+                icon: '💕',
+                color: '#fd79a8',
+                keywords: ['恋爱', '相亲', '结婚', '离婚', '分手', '暗恋', '表白', '婆媳', '出轨', '渣男', '渣女', '感情', '两性', '婚姻', '单身', '脱单', '约会', '情侣', '爱情', '暧昧', '前任', '挽回', '冷暴力', 'PUA', '彩礼', '嫁妆', '催婚', '异地恋', '恐婚', '丁克'],
+                desc: '恋爱/婚姻/两性/情感故事'
+            },
+            funny: {
+                name: '搞笑趣味',
+                icon: '😂',
+                color: '#fdcb6e',
+                keywords: ['搞笑', '笑死', '段子', '沙雕', '离谱', '整活', '神回复', '名场面', '社死', '尴尬', '迷惑行为', '翻车', '吐槽', '脑洞', '整蛊', '鬼畜', '恶搞', '梗', '表情包', '玩梗', '反转', '意想不到', '沙雕网友', '笑不活了', '抽象', '发疯文学'],
+                desc: '段子/沙雕/名场面/吐槽/梗'
+            },
+            knowledge: {
+                name: '知识科普',
+                icon: '📚',
+                color: '#00b894',
+                keywords: ['科普', '知识', '学习', '干货', '教程', '方法', '如何', '为什么', '原理', '历史', '哲学', '心理学', '解读', '分析', '深度', '研究', '论文', '思维', '认知', '读书', '书单', '推荐', '入门', '进阶', '技巧', '经验', '效率', '考研', '考证', '英语', '留学', '申请'],
+                desc: '科普/学习/干货/教程/深度'
+            },
+            society: {
+                name: '社会民生',
+                icon: '🏘️',
+                color: '#26de81',
+                keywords: ['高考', '教育', '就业', '医保', '养老', '生育', '人口', '消费', '物价', '天气', '暴雨', '高温', '预警', '台风', '交通', '铁路', '出行', '假期', '端午', '春节', '公积金', '社保', '退费', '维权', '骑手', '外卖', '诈骗', '法律', '法院', '判决', '校园', '霸凌', '安全', '事故', '救援', '地震', '洪水'],
+                desc: '教育/就业/天气/法律/民生'
+            },
+            auto: {
+                name: '汽车出行',
+                icon: '🚗',
+                color: '#00d2d3',
+                keywords: ['汽车', '新能源', '电车', '特斯拉', '比亚迪', '小鹏', '蔚来', '理想', '小米汽车', 'SU7', '充电', '续航', '价格战', '预售', '自驾', '露营', '提车', '试驾', '4S店', '保养', '油耗', '混动', '纯电', '增程', '智驾'],
+                desc: '新能源/电车/自驾/试驾'
+            },
+            sports: {
+                name: '体育运动',
+                icon: '⚽',
+                color: '#ee5a24',
+                keywords: ['NBA', '足球', '篮球', '中超', '欧冠', '世界杯', '转会', '比赛', '冠军', '健身', '跑步', '步行', '体育', '奥运', '球员', '教练', '进球', '马拉松', '网球', '乒乓', '羽毛球', '游泳', '格斗', 'UFC', '拳击'],
+                desc: 'NBA/足球/健身/赛事/奥运'
+            },
+            politics: {
+                name: '时政国际',
+                icon: '🌍',
+                color: '#3742fa',
+                keywords: ['国务院', '政策', '国际', '全球', '供应链', '出口', '进口', '贸易', '制造', '产业', '改革', '新政', '通知', '航天', '登月', '载人', '发射', '国防', '乡村振兴', '外交', '峰会', '联合国', '制裁', '冲突', '战争', '条约', '协定'],
+                desc: '政策/国际/航天/外交/产业'
+            },
+            travel: {
+                name: '旅游探店',
+                icon: '✈️',
+                color: '#e17055',
+                keywords: ['旅游', '旅行', '攻略', '景点', '酒店', '民宿', '机票', '签证', '出境', '自驾游', '露营', '打卡', '网红', '探店', '美食', '小吃', '奶茶', '咖啡', '餐厅', '排队', '特产', '度假', '海岛', '古镇', '古城'],
+                desc: '旅行/攻略/探店/美食/打卡'
+            },
+            health: {
+                name: '健康医疗',
+                icon: '🩺',
+                color: '#10ac84',
+                keywords: ['健康', '医学', '医疗', '防暑', '降温', '护肤', '减肥', '饮食', '中医', '心血管', '睡眠', '柳叶刀', '研究发现', '疫苗', '流感', '过敏', '抑郁', '焦虑', '心理', '体检', '手术', '门诊', '保健', '维生素', '养生', '熬夜'],
+                desc: '医疗/养生/心理/健康管理'
+            },
+            fashion: {
+                name: '时尚美妆',
+                icon: '💄',
+                color: '#e84393',
+                keywords: ['穿搭', '时尚', '美妆', '化妆', '口红', '面膜', '防晒', '发型', '潮流', '品牌', '奢侈品', 'LV', 'Gucci', '联名', '种草', '拔草', '测评', '好物', '新品', '限定', '代购', '打折', '双11', '618', '直播间'],
+                desc: '美妆/穿搭/品牌/种草/好物'
+            },
+            parenting: {
+                name: '母婴育儿',
+                icon: '👶',
+                color: '#fab1a0',
+                keywords: ['育儿', '宝宝', '孕妇', '产后', '母乳', '辅食', '早教', '幼儿园', '小学', '升学', '鸡娃', '减负', '家长', '亲子', '儿童', '疫苗', '发烧', '过敏', '绘本', '玩具', '童装', '奶粉', '纸尿裤', '月嫂'],
+                desc: '育儿/教育/亲子/母婴好物'
+            },
+            pets: {
+                name: '萌宠动物',
+                icon: '🐱',
+                color: '#74b9ff',
+                keywords: ['宠物', '猫', '狗', '猫咪', '狗狗', '铲屎官', '撸猫', '领养', '宠物医院', '驱虫', '绝育', '猫粮', '狗粮', '萌宠', '布偶', '柯基', '金毛', '橘猫', '小动物', '仓鼠', '鹦鹉', '养鱼'],
+                desc: '猫狗/萌宠/养护/宠物日常'
+            }
+        };
+
+        function classifyTopic(title) {
+            let bestMatch = 'society'; // default fallback
+            let maxScore = 0;
+
+            Object.entries(CATEGORIES).forEach(([key, cat]) => {
+                let score = 0;
+                cat.keywords.forEach(kw => {
+                    if (title.includes(kw)) {
+                        score += kw.length; // longer keyword = more specific match
+                    }
+                });
+                if (score > maxScore) {
+                    maxScore = score;
+                    bestMatch = key;
+                }
+            });
+
+            // If no strong match, try fuzzy classification based on platform context
+            if (maxScore === 0) {
+                // Keep default 'society' for unmatched items
+                return 'society';
+            }
+
+            return bestMatch;
+        }
+
+        function renderCategoryView(data) {
+            const container = document.getElementById('categoryGrid');
+            const statsContainer = document.getElementById('categoryStats');
+            if (!container) return;
+
+            // Collect all items and classify
+            const categorized = {};
+            Object.keys(CATEGORIES).forEach(cat => { categorized[cat] = []; });
+
+            Object.entries(data).forEach(([platform, items]) => {
+                items.forEach(item => {
+                    const category = classifyTopic(item.title);
+                    categorized[category].push({
+                        ...item,
+                        platform,
+                        platformName: PLATFORMS[platform]?.name || platform,
+                        platformIcon: PLATFORMS[platform]?.icon || '📌'
+                    });
+                });
+            });
+
+            // Also include news data in categories
+            if (newsData && newsData.length > 0) {
+                newsData.forEach(item => {
+                    const category = classifyTopic(item.title);
+                    categorized[category].push({
+                        title: item.title,
+                        heat: item.engagement ? (item.engagement.likes + item.engagement.comments * 3 + item.engagement.shares * 5) : 0,
+                        url: item.url,
+                        tag: item.aiScore >= 85 ? 'hot' : item.aiScore >= 70 ? 'rising' : '',
+                        platform: 'news',
+                        platformName: item.source?.name || '滚动新闻',
+                        platformIcon: item.source?.icon || '📡'
+                    });
+                });
+            }
+
+            // Sort each category by heat
+            Object.values(categorized).forEach(items => {
+                items.sort((a, b) => (b.heat || 0) - (a.heat || 0));
+            });
+
+            // Render stats chips
+            let statsHtml = '';
+            Object.entries(CATEGORIES).forEach(([key, cat]) => {
+                const count = categorized[key].length;
+                if (count > 0) {
+                    statsHtml += `<div class="category-stat-chip" onclick="scrollToCategory('${key}')">
+                        ${cat.icon} ${cat.name} <span class="chip-count">${count}</span>
+                    </div>`;
+                }
+            });
+            statsContainer.innerHTML = statsHtml;
+
+            // Render category sections
+            let html = '';
+            // Sort categories by total heat
+            const sortedCategories = Object.entries(categorized)
+                .map(([key, items]) => ({
+                    key,
+                    items,
+                    totalHeat: items.reduce((sum, i) => sum + (i.heat || 0), 0)
+                }))
+                .filter(c => c.items.length > 0)
+                .sort((a, b) => b.totalHeat - a.totalHeat);
+
+            sortedCategories.forEach(({ key, items, totalHeat }) => {
+                const cat = CATEGORIES[key];
+                const heatLevel = totalHeat > 20000000 ? 'hot' : totalHeat > 10000000 ? 'warm' : 'normal';
+                const heatLabel = heatLevel === 'hot' ? '🔥 爆热' : heatLevel === 'warm' ? '📈 较热' : '💡 正常';
+                const displayItems = items.slice(0, 12); // Show top 12 per category
+
+                html += `
+                    <div class="category-section" id="category-${key}">
+                        <div class="category-section-header">
+                            <div class="category-section-left">
+                                <div class="category-icon" style="background: ${cat.color}22; color: ${cat.color};">${cat.icon}</div>
+                                <div>
+                                    <div class="category-name">${cat.name}</div>
+                                    <div class="category-desc">${cat.desc}</div>
+                                </div>
+                            </div>
+                            <div class="category-section-right">
+                                <span class="category-count">${items.length} 条热点</span>
+                                <span class="category-heat-badge heat-level-${heatLevel}">${heatLabel}</span>
+                            </div>
+                        </div>
+                        <div class="category-items">
+                            ${displayItems.map((item, i) => `
+                                <a class="category-item" href="${item.url}" target="_blank" rel="noopener">
+                                    <div class="category-item-rank ${i < 1 ? 'top1' : i < 2 ? 'top2' : i < 3 ? 'top3' : 'normal'}">${i + 1}</div>
+                                    <div class="category-item-content">
+                                        <div class="category-item-title">${item.title}</div>
+                                        <div class="category-item-source">${item.platformIcon} ${item.platformName}</div>
+                                    </div>
+                                    <div class="category-item-right">
+                                        ${item.heat ? `<span class="category-item-heat">${formatHeat(item.heat)}</span>` : ''}
+                                        ${item.tag === 'rising' ? '<span class="category-trend">📈</span>' : item.tag === 'new' ? '<span class="category-trend">🆕</span>' : item.tag === 'hot' ? '<span class="category-trend">🔥</span>' : ''}
+                                    </div>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function scrollToCategory(key) {
+            const el = document.getElementById(`category-${key}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ===== Utilities =====
+        function formatHeat(heat) {
+            if (heat >= 10000000) return (heat / 10000000).toFixed(1) + '千万';
+            if (heat >= 10000) return (heat / 10000).toFixed(0) + '万';
+            if (heat >= 1000) return (heat / 1000).toFixed(1) + 'k';
+            return heat.toString();
+        }
+
+        function getTagText(tag) {
+            const tagMap = { hot: '热', new: '新', rising: '飙', recommend: '荐' };
+            return tagMap[tag] || '';
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // ===== Tab & Filter =====
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        }
+
+        function filterPlatform(platform) {
+            currentFilter = platform;
+            document.querySelectorAll('.filter-chip').forEach(chip => chip.classList.remove('active'));
+            event.target.classList.add('active');
+            renderHotGrid(allData, 'hotGrid', platform);
+        }
+
+        // ===== Auto Refresh =====
+        let isOnline = false; // Track if we're running with a backend
+
+        async function fetchFromAPI(forceRefresh = false) {
+            try {
+                const url = forceRefresh ? '/api/hot?refresh=1' : '/api/hot';
+                const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const json = await res.json();
+                if (json.success && json.data) {
+                    isOnline = true;
+                    return json;
+                }
+                throw new Error('Invalid response');
+            } catch (e) {
+                console.log('API fetch failed, using local data:', e.message);
+                isOnline = false;
+                return null;
+            }
+        }
+
+        async function refreshAll(forceRefresh = false) {
+            const btn = document.querySelector('.refresh-btn');
+            btn.classList.add('loading');
+            btn.textContent = '⏳ 刷新中...';
+
+            try {
+                // Try fetching from backend API first
+                const apiResult = await fetchFromAPI(forceRefresh);
+
+                if (apiResult) {
+                    // Use real API data
+                    allData = apiResult.data;
+                    newsData = generateRollingNews(); // News still uses generated data for now
+                    const updateTime = apiResult.lastUpdate ? new Date(apiResult.lastUpdate) : new Date();
+                    document.getElementById('updateTime').textContent = `最后更新: ${updateTime.toLocaleTimeString('zh-CN')}${apiResult.cached ? ' (缓存)' : ' (实时)'}`;
+                    showToast(apiResult.cached ? '📦 使用缓存数据' : '✅ 已获取实时热搜数据');
+                } else {
+                    // Fallback to local simulated data
+                    allData = generateRealisticData();
+                    newsData = generateRollingNews();
+                    document.getElementById('updateTime').textContent = `最后更新: ${new Date().toLocaleTimeString('zh-CN')} (模拟)`;
+                    showToast('📋 使用模拟数据（后端未连接）');
+                }
+
+                renderHotGrid(allData, 'hotGrid', currentFilter);
+                renderCategoryView(allData);
+                renderRisingGrid(allData);
+                renderTicker(allData);
+                renderNewsFeed(newsFilter);
+
+                const predictions = generateAIPredictions(allData);
+                renderAIPredictions(predictions);
+
+                // Update stats
+                let totalTopics = 0;
+                Object.values(allData).forEach(items => totalTopics += items.length);
+                document.getElementById('statTopics').textContent = totalTopics + newsData.length;
+                document.getElementById('statNews').textContent = newsData.length;
+                document.getElementById('statPlatforms').textContent = Object.keys(allData).length + '+';
+                document.getElementById('statUpdate').textContent = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+            } catch (e) {
+                console.error('Refresh error:', e);
+                showToast('❌ 刷新失败，请稍后重试');
+            } finally {
+                btn.classList.remove('loading');
+                btn.textContent = '🔄 立即刷新';
+            }
+        }
+
+        function startAutoRefresh() {
+            // Main data refresh: every 2 hours (matches backend)
+            autoRefreshTimer = setInterval(() => {
+                refreshAll(true); // Force refresh from backend
+            }, 2 * 60 * 60 * 1000); // 2 hours
+
+            // Also do a lighter check every 5 minutes for cached data
+            setInterval(() => {
+                refreshAll(false);
+            }, 5 * 60 * 1000); // 5 minutes
+
+            // News feed updates more frequently (every 30s)
+            newsRefreshTimer = setInterval(() => {
+                if (document.getElementById('tab-news').classList.contains('active')) {
+                    newsData = generateRollingNews();
+                    renderNewsFeed(newsFilter);
+                    showToast('📡 发现新内容');
+                }
+            }, 30000);
+        }
+
+        // ===== Init =====
+        function init() {
+            renderPlatformFilters();
+            refreshAll(true); // Initial load with force refresh
+            startAutoRefresh();
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
