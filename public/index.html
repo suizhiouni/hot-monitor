@@ -1086,6 +1086,7 @@
         <!-- Tabs -->
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('all')">🌐 全部热点</button>
+            <button class="tab-btn" onclick="switchTab('recycle')">♻️ 再生资源追踪</button>
             <button class="tab-btn" onclick="switchTab('category')">📂 垂类分组</button>
             <button class="tab-btn" onclick="switchTab('news')">📡 滚动新闻</button>
             <button class="tab-btn" onclick="switchTab('rising')">📈 飙升榜</button>
@@ -1096,6 +1097,24 @@
         <div class="tab-content active" id="tab-all">
             <div class="platform-filters" id="platformFilters"></div>
             <div class="grid-container" id="hotGrid"></div>
+        </div>
+
+        <!-- Recycle Tab -->
+        <div class="tab-content" id="tab-recycle">
+            <div class="recycle-section-title" style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+                <span style="font-size:20px;">♻️</span>
+                <div>
+                    <div style="font-size:16px;font-weight:600;">再生资源行业数据追踪</div>
+                    <div style="font-size:12px;color:var(--text-muted);">废金属价格 · 供求热度 · 官方指数 · 上市企业行情</div>
+                </div>
+            </div>
+            <div class="grid-container" id="recycleGrid"></div>
+            <div style="margin-top:24px;">
+                <div style="font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                    <span>📰</span> 再生资源相关热点 & 资讯
+                </div>
+                <div class="news-feed" id="recycleNews"></div>
+            </div>
         </div>
 
         <!-- Category Tab -->
@@ -1789,6 +1808,118 @@
             container.innerHTML = html;
         }
 
+        // ===== Recycle Tab Rendering =====
+        function renderRecycleTab(data) {
+            const recycleGrid = document.getElementById('recycleGrid');
+            const recycleNews = document.getElementById('recycleNews');
+            if (!recycleGrid) return;
+
+            // Recycle-related platforms
+            const recyclePlatforms = ['feifei', 'recycle91', 'mofcom', 'ths_recycle'];
+
+            // Render recycling platform cards
+            let gridHtml = '';
+            recyclePlatforms.forEach(platform => {
+                const config = PLATFORMS[platform];
+                const items = data[platform];
+                if (!config || !items || items.length === 0) return;
+
+                gridHtml += `
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: ${config.color}22;">${config.icon}</div>
+                                <div>
+                                    <div class="card-name">${config.name}</div>
+                                    <div class="card-meta">共 ${items.length} 条数据</div>
+                                </div>
+                            </div>
+                            <div class="card-meta">${new Date().toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</div>
+                        </div>
+                        <div class="card-body">
+                            ${items.map((item, i) => `
+                                <a class="hot-item" href="${item.url}" target="_blank" rel="noopener">
+                                    <div class="hot-rank ${i < 1 ? 'top1' : i < 2 ? 'top2' : i < 3 ? 'top3' : 'normal'}">${i + 1}</div>
+                                    <div class="hot-content">
+                                        <div class="hot-title">${item.title}</div>
+                                    </div>
+                                    <div class="hot-metrics">
+                                        ${item.heat ? `<span class="hot-heat">${formatHeat(item.heat)}</span>` : ''}
+                                        ${item.tag ? `<span class="hot-tag tag-${item.tag}">${getTagText(item.tag)}</span>` : ''}
+                                    </div>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            recycleGrid.innerHTML = gridHtml;
+
+            // Collect recycling-related news from all platforms (non-recycling platforms too)
+            const recycleKeywords = ['再生', '回收', '废钢', '废铜', '废铝', '废金属', '废塑料', '废纸', '废料', '拆解', '报废', '钢厂', '有色金属', '不锈钢', '废旧', '废品', '循环', '环保', '碳中和', '碳排放', '绿色', '低碳', '固废', '危废', '垃圾', '焚烧', '填埋', '节能', '减排', 'ESG', '双碳', '清洁', '污水', '排污', '资源化', '可持续'];
+
+            const recycleRelatedNews = [];
+
+            // Check all platforms for recycling-related content
+            Object.entries(data).forEach(([platform, items]) => {
+                if (recyclePlatforms.includes(platform)) return; // Already shown above
+                items.forEach(item => {
+                    if (recycleKeywords.some(kw => (item.title || '').includes(kw))) {
+                        recycleRelatedNews.push({
+                            ...item,
+                            platform,
+                            platformName: PLATFORMS[platform]?.name || platform,
+                            platformIcon: PLATFORMS[platform]?.icon || '📌'
+                        });
+                    }
+                });
+            });
+
+            // Also include matching items from news feed
+            if (newsData && newsData.length > 0) {
+                newsData.forEach(item => {
+                    if (recycleKeywords.some(kw => (item.title || '').includes(kw) || (item.desc || '').includes(kw))) {
+                        recycleRelatedNews.push({
+                            title: item.title,
+                            heat: item.engagement ? (item.engagement.likes + item.engagement.comments * 2 + item.engagement.shares * 3) : 0,
+                            url: item.url,
+                            tag: item.aiScore >= 85 ? 'hot' : item.aiScore >= 70 ? 'rising' : '',
+                            platform: 'news',
+                            platformName: item.source?.name || '滚动新闻',
+                            platformIcon: item.source?.icon || '📡',
+                            desc: item.desc,
+                            timeStr: item.timeStr
+                        });
+                    }
+                });
+            }
+
+            // Render related news section
+            if (recycleRelatedNews.length > 0) {
+                recycleNews.innerHTML = recycleRelatedNews.map((item, idx) => `
+                    <a class="news-item" href="${item.url}" target="_blank" rel="noopener">
+                        <div class="news-timeline">
+                            <div class="news-time">${item.timeStr || ''}</div>
+                            <div class="news-time-dot"></div>
+                        </div>
+                        <div class="news-body">
+                            <div class="news-source">
+                                <span class="news-source-name">${item.platformIcon} ${item.platformName}</span>
+                            </div>
+                            <div class="news-title">${item.title}</div>
+                            ${item.desc ? `<div class="news-desc">${item.desc}</div>` : ''}
+                            <div class="news-footer">
+                                ${item.heat ? `<span class="hot-heat">${formatHeat(item.heat)}</span>` : ''}
+                                ${item.tag ? `<span class="hot-tag tag-${item.tag}">${getTagText(item.tag)}</span>` : ''}
+                            </div>
+                        </div>
+                    </a>
+                `).join('');
+            } else {
+                recycleNews.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:24px;font-size:13px;">暂无再生资源相关热点资讯，全网热搜中未检测到相关话题</div>`;
+            }
+        }
+
         function renderRisingGrid(data) {
             const container = document.getElementById('risingGrid');
             if (!container) return;
@@ -2262,6 +2393,7 @@
                 }
 
                 renderHotGrid(allData, 'hotGrid', currentFilter);
+                renderRecycleTab(allData);
                 renderCategoryView(allData);
                 renderRisingGrid(allData);
                 renderTicker(allData);
