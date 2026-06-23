@@ -74,12 +74,15 @@ async function fetchBaidu() {
         const res = await safeFetch('https://60s.viki.moe/v2/baidu/hot');
         const data = await res.json();
         if (data?.code === 200 && data?.data) {
-            return data.data.slice(0, 15).map(item => ({
-                title: item.title || item.name,
-                heat: item.score || item.hot_value || item.hot || 0,
-                url: item.url || `https://www.baidu.com/s?wd=${encodeURIComponent(item.title || item.name)}`,
-                tag: item.type_desc === '新' ? 'new' : item.type_desc === '热' ? 'hot' : ''
-            }));
+            return data.data
+                .filter(item => item.title) // Filter out empty items
+                .slice(0, 15)
+                .map(item => ({
+                    title: item.title,
+                    heat: item.score || item.hot_value || item.hot || 0,
+                    url: item.url || `https://www.baidu.com/s?wd=${encodeURIComponent(item.title)}`,
+                    tag: item.type_desc === '新' ? 'new' : item.type_desc === '热' ? 'hot' : ''
+                }));
         }
     } catch (e) { console.log('Baidu (60s) fetch failed:', e.message); }
     // Fallback: try direct API
