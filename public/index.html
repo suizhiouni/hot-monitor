@@ -1115,6 +1115,12 @@
                 </div>
                 <div class="news-feed" id="recycleNews"></div>
             </div>
+            <div style="margin-top:24px;">
+                <div style="font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                    <span>♻️</span> 再生资源回收·垂类聚合
+                </div>
+                <div class="category-container" id="recycleCategorySection"></div>
+            </div>
         </div>
 
         <!-- Category Tab -->
@@ -1917,6 +1923,94 @@
                 `).join('');
             } else {
                 recycleNews.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:24px;font-size:13px;">暂无再生资源相关热点资讯，全网热搜中未检测到相关话题</div>`;
+            }
+
+            // Render recycling category section (same as in 垂类分组)
+            const recycleCatContainer = document.getElementById('recycleCategorySection');
+            if (recycleCatContainer) {
+                const recycleCatKeys = ['recycling', 'environment', 'waste', 'scrap_steel'];
+                const categorized = {};
+                recycleCatKeys.forEach(cat => { categorized[cat] = []; });
+
+                const platformCategoryMap = { feifei: 'recycling', recycle91: 'recycling', mofcom: 'recycling', ths_recycle: 'recycling' };
+
+                Object.entries(data).forEach(([platform, items]) => {
+                    items.forEach(item => {
+                        const category = platformCategoryMap[platform] || classifyTopic(item.title);
+                        if (recycleCatKeys.includes(category)) {
+                            categorized[category].push({
+                                ...item,
+                                platform,
+                                platformName: PLATFORMS[platform]?.name || platform,
+                                platformIcon: PLATFORMS[platform]?.icon || '📌'
+                            });
+                        }
+                    });
+                });
+
+                // Also check news data
+                if (newsData && newsData.length > 0) {
+                    newsData.forEach(item => {
+                        const category = classifyTopic(item.title);
+                        if (recycleCatKeys.includes(category)) {
+                            categorized[category].push({
+                                title: item.title,
+                                heat: item.engagement ? (item.engagement.likes + item.engagement.comments * 3 + item.engagement.shares * 5) : 0,
+                                url: item.url,
+                                tag: item.aiScore >= 85 ? 'hot' : item.aiScore >= 70 ? 'rising' : '',
+                                platform: 'news',
+                                platformName: item.source?.name || '滚动新闻',
+                                platformIcon: item.source?.icon || '📡'
+                            });
+                        }
+                    });
+                }
+
+                // Sort each category by heat
+                Object.values(categorized).forEach(items => {
+                    items.sort((a, b) => (b.heat || 0) - (a.heat || 0));
+                });
+
+                let catHtml = '';
+                recycleCatKeys.forEach(key => {
+                    const cat = CATEGORIES[key];
+                    const items = categorized[key];
+                    if (!cat || items.length === 0) return;
+                    const displayItems = items.slice(0, 12);
+
+                    catHtml += `
+                        <div class="category-section">
+                            <div class="category-section-header">
+                                <div class="category-section-left">
+                                    <div class="category-icon" style="background: ${cat.color}22; color: ${cat.color};">${cat.icon}</div>
+                                    <div>
+                                        <div class="category-name">${cat.name}</div>
+                                        <div class="category-desc">${cat.desc}</div>
+                                    </div>
+                                </div>
+                                <div class="category-section-right">
+                                    <span class="category-count">${items.length} 条热点</span>
+                                </div>
+                            </div>
+                            <div class="category-items">
+                                ${displayItems.map((item, i) => `
+                                    <a class="category-item" href="${item.url}" target="_blank" rel="noopener">
+                                        <div class="category-item-rank ${i < 1 ? 'top1' : i < 2 ? 'top2' : i < 3 ? 'top3' : 'normal'}">${i + 1}</div>
+                                        <div class="category-item-content">
+                                            <div class="category-item-title">${item.title}</div>
+                                            <div class="category-item-source">${item.platformIcon} ${item.platformName}</div>
+                                        </div>
+                                        <div class="category-item-right">
+                                            ${item.heat ? `<span class="category-item-heat">${formatHeat(item.heat)}</span>` : ''}
+                                            ${item.tag === 'rising' ? '<span class="category-trend">📈</span>' : item.tag === 'new' ? '<span class="category-trend">🆕</span>' : item.tag === 'hot' ? '<span class="category-trend">🔥</span>' : ''}
+                                        </div>
+                                    </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                recycleCategorySection.innerHTML = catHtml || `<div style="text-align:center;color:var(--text-muted);padding:24px;font-size:13px;">暂无分类数据</div>`;
             }
         }
 
