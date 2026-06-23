@@ -38,8 +38,21 @@ async function safeFetch(url, options = {}) {
     }
 }
 
-// 1. Weibo Hot Search
+// 1. Weibo Hot Search (via 60s CDN API - global accessible)
 async function fetchWeibo() {
+    try {
+        const res = await safeFetch('https://60s.viki.moe/v2/weibo');
+        const data = await res.json();
+        if (data?.code === 200 && data?.data) {
+            return data.data.slice(0, 15).map((item, i) => ({
+                title: item.title || item.name,
+                heat: item.hot || item.hotness || 0,
+                url: item.url || `https://s.weibo.com/weibo?q=%23${encodeURIComponent(item.title || item.name)}%23`,
+                tag: i < 3 ? 'hot' : (item.tag === 'new' || item.isNew) ? 'new' : ''
+            }));
+        }
+    } catch (e) { console.log('Weibo (60s) fetch failed:', e.message); }
+    // Fallback: try direct API
     try {
         const res = await safeFetch('https://weibo.com/ajax/side/hotSearch');
         const data = await res.json();
@@ -51,12 +64,25 @@ async function fetchWeibo() {
                 tag: item.is_new ? 'new' : item.is_hot ? 'hot' : item.is_fei ? 'rising' : ''
             }));
         }
-    } catch (e) { console.log('Weibo fetch failed:', e.message); }
+    } catch (e) { console.log('Weibo (direct) fetch failed:', e.message); }
     return null;
 }
 
-// 2. Baidu Hot Search
+// 2. Baidu Hot Search (via 60s CDN API)
 async function fetchBaidu() {
+    try {
+        const res = await safeFetch('https://60s.viki.moe/v2/baidu/hot');
+        const data = await res.json();
+        if (data?.code === 200 && data?.data) {
+            return data.data.slice(0, 15).map(item => ({
+                title: item.title || item.name,
+                heat: item.hot || item.hotness || 0,
+                url: item.url || `https://www.baidu.com/s?wd=${encodeURIComponent(item.title || item.name)}`,
+                tag: ''
+            }));
+        }
+    } catch (e) { console.log('Baidu (60s) fetch failed:', e.message); }
+    // Fallback: try direct API
     try {
         const res = await safeFetch('https://top.baidu.com/api/board?platform=wise&tab=realtime');
         const data = await res.json();
@@ -68,7 +94,7 @@ async function fetchBaidu() {
                 tag: item.isNew ? 'new' : item.isHot ? 'hot' : ''
             }));
         }
-    } catch (e) { console.log('Baidu fetch failed:', e.message); }
+    } catch (e) { console.log('Baidu (direct) fetch failed:', e.message); }
     return null;
 }
 
@@ -102,8 +128,21 @@ async function fetchBilibili() {
     return null;
 }
 
-// 4. Zhihu Hot List
+// 4. Zhihu Hot List (via 60s CDN API)
 async function fetchZhihu() {
+    try {
+        const res = await safeFetch('https://60s.viki.moe/v2/zhihu');
+        const data = await res.json();
+        if (data?.code === 200 && data?.data) {
+            return data.data.slice(0, 15).map(item => ({
+                title: item.title || item.name,
+                heat: item.hot || item.hotness || 0,
+                url: item.url || `https://www.zhihu.com/question/${item.id}`,
+                tag: ''
+            }));
+        }
+    } catch (e) { console.log('Zhihu (60s) fetch failed:', e.message); }
+    // Fallback: direct API
     try {
         const res = await safeFetch('https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=15', {
             headers: { 'Referer': 'https://www.zhihu.com/hot' }
@@ -112,12 +151,12 @@ async function fetchZhihu() {
         if (data?.data) {
             return data.data.slice(0, 15).map(item => ({
                 title: item.target?.title || item.title || '',
-                heat: parseInt(item.detail_text?.replace(/[^\d]/g, '')) || item.children?.[0]?.thumbnail_extra_info?.hot_score || 0,
+                heat: parseInt(item.detail_text?.replace(/[^\d]/g, '')) || 0,
                 url: item.target?.url?.replace('api.zhihu.com/questions', 'www.zhihu.com/question') || `https://www.zhihu.com/question/${item.target?.id}`,
                 tag: ''
             }));
         }
-    } catch (e) { console.log('Zhihu fetch failed:', e.message); }
+    } catch (e) { console.log('Zhihu (direct) fetch failed:', e.message); }
     return null;
 }
 
@@ -138,8 +177,21 @@ async function fetchToutiao() {
     return null;
 }
 
-// 6. QQ News Hot Ranking
+// 6. QQ News Hot Ranking (via 60s CDN API + direct fallback)
 async function fetchQQNews() {
+    try {
+        const res = await safeFetch('https://60s.viki.moe/v2/tencent-news');
+        const data = await res.json();
+        if (data?.code === 200 && data?.data) {
+            return data.data.slice(0, 12).map(item => ({
+                title: item.title || item.name,
+                heat: item.hot || item.hotness || 0,
+                url: item.url || `https://new.qq.com/`,
+                tag: ''
+            }));
+        }
+    } catch (e) { console.log('QQNews (60s) fetch failed:', e.message); }
+    // Fallback: direct API
     try {
         const res = await safeFetch('https://r.inews.qq.com/gw/event/hot_ranking_list?page_size=20');
         const data = await res.json();
@@ -151,7 +203,7 @@ async function fetchQQNews() {
                 tag: ''
             }));
         }
-    } catch (e) { console.log('QQ News fetch failed:', e.message); }
+    } catch (e) { console.log('QQNews (direct) fetch failed:', e.message); }
     return null;
 }
 
@@ -189,8 +241,21 @@ async function fetchThePaper() {
     return null;
 }
 
-// 9. Juejin Hot Articles
+// 9. Juejin Hot Articles (via 60s CDN API)
 async function fetchJuejin() {
+    try {
+        const res = await safeFetch('https://60s.viki.moe/v2/juejin');
+        const data = await res.json();
+        if (data?.code === 200 && data?.data) {
+            return data.data.slice(0, 10).map(item => ({
+                title: item.title || item.name,
+                heat: item.hot || item.hotness || 0,
+                url: item.url || `https://juejin.cn/`,
+                tag: ''
+            }));
+        }
+    } catch (e) { console.log('Juejin (60s) fetch failed:', e.message); }
+    // Fallback: direct API
     try {
         const res = await safeFetch('https://api.juejin.cn/content_api/v1/content/article_rank?category_id=1&type=hot', {
             method: 'POST',
@@ -206,7 +271,7 @@ async function fetchJuejin() {
                 tag: ''
             }));
         }
-    } catch (e) { console.log('Juejin fetch failed:', e.message); }
+    } catch (e) { console.log('Juejin (direct) fetch failed:', e.message); }
     return null;
 }
 
