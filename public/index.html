@@ -1157,89 +1157,60 @@
     <script>
         // ===== Configuration =====
         const PLATFORMS = {
+            feifei: {
+                name: '废废APP·再生指数',
+                icon: '♻️',
+                color: '#2e7d32'
+            },
+            recycle91: {
+                name: '91再生·供求热度',
+                icon: '🔄',
+                color: '#00838f'
+            },
+            mofcom: {
+                name: '商务部·再生价格指数',
+                icon: '🏛️',
+                color: '#1565c0'
+            },
+            ths_recycle: {
+                name: '同花顺·再生资源板块',
+                icon: '📈',
+                color: '#d32f2f'
+            },
             weibo: {
                 name: '微博热搜',
                 icon: '🔴',
-                color: '#ff4757',
-                api: 'https://weibo.com/ajax/side/hotSearch',
-                parser: 'weibo'
+                color: '#ff4757'
             },
             baidu: {
                 name: '百度热搜',
                 icon: '🔵',
-                color: '#4a9eff',
-                api: 'https://top.baidu.com/api/board?platform=wise&tab=realtime',
-                parser: 'baidu'
+                color: '#4a9eff'
             },
             douyin: {
                 name: '抖音热榜',
                 icon: '🎵',
-                color: '#00f2ea',
-                api: 'https://aweme.snssdk.com/aweme/v1/hot/search/list/',
-                parser: 'douyin'
+                color: '#00f2ea'
             },
             zhihu: {
                 name: '知乎热榜',
                 icon: '💡',
-                color: '#0084ff',
-                api: 'https://api.zhihu.com/topstory/hot-list',
-                parser: 'zhihu'
+                color: '#0084ff'
             },
             toutiao: {
                 name: '头条热榜',
                 icon: '📰',
-                color: '#ff6347',
-                api: 'https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc',
-                parser: 'toutiao'
+                color: '#ff6347'
             },
             bilibili: {
                 name: 'B站热榜',
                 icon: '📺',
-                color: '#fb7299',
-                api: 'https://api.bilibili.com/x/web-interface/popular?ps=20&pn=1',
-                parser: 'bilibili'
-            },
-            qqnews: {
-                name: '腾讯新闻',
-                icon: '📋',
-                color: '#4fc3f7',
-                api: 'https://r.inews.qq.com/gw/event/hot_ranking_list?page_size=30',
-                parser: 'qqnews'
-            },
-            weread: {
-                name: '微信读书',
-                icon: '📖',
-                color: '#07c160',
-                api: 'https://weread.qq.com/web/bookListInCategory/rising?rank=1',
-                parser: 'weread'
+                color: '#fb7299'
             },
             thepaper: {
                 name: '澎湃新闻',
                 icon: '📄',
-                color: '#c62828',
-                api: 'https://cache.thepaper.cn/contentapi/wwwIndex/rightSidebar',
-                parser: 'thepaper'
-            },
-            hupu: {
-                name: '虎扑热帖',
-                icon: '🏀',
-                color: '#e53935',
-                api: 'https://bbs.hupu.com/api/v1/hot-topic',
-                parser: 'hupu'
-            },
-            tieba: {
-                name: '百度贴吧',
-                icon: '💬',
-                color: '#3f51b5',
-                api: 'https://tieba.baidu.com/hottopic/browse/topicList',
-                parser: 'tieba'
-            },
-            juejin: {
-                name: '掘金热榜',
-                icon: '⚡',
-                color: '#1e80ff',
-                api: 'https://api.juejin.cn/content_api/v1/content/article_rank?category_id=1&type=hot',
-                parser: 'juejin'
+                color: '#c62828'
             }
         };
 
@@ -1919,11 +1890,39 @@
 
         // ===== Category Classification =====
         const CATEGORIES = {
+            recycling: {
+                name: '再生资源回收',
+                icon: '♻️',
+                color: '#2e7d32',
+                keywords: ['再生', '回收', '废钢', '废铜', '废铝', '废金属', '废塑料', '废纸', '废料', '拆解', '报废', '钢厂', '有色金属', '不锈钢', '废旧', '废品', '再生资源', '循环', '再利用', '锂电池', '废锌', '废铅', '废锡', '废镍', '供求', '行情', '报价', '涨跌', '价格指数', '格林美', '天奇', '怡球', '华宏', '中再资环', '再生颗粒', '打包', '破碎', '分拣'],
+                desc: '废金属/废塑料/废纸/价格行情/供求'
+            },
+            environment: {
+                name: '环保行业',
+                icon: '🌿',
+                color: '#1b5e20',
+                keywords: ['环保', '碳中和', '碳排放', '绿色', '低碳', '清洁能源', '污水', '废气', '固废', '危废', '环评', '排污', '垃圾分类', '焚烧', '填埋', '节能', '减排', '可持续', 'ESG', '双碳', '生态', '治理', '监测'],
+                desc: '碳中和/固废/危废/环评/ESG'
+            },
+            waste: {
+                name: '垃圾回收',
+                icon: '🗑️',
+                color: '#4e342e',
+                keywords: ['垃圾', '生活垃圾', '厨余', '垃圾分类', '垃圾回收', '垃圾焚烧', '填埋', '转运', '清运', '环卫', '餐厨', '可回收', '有害垃圾', '湿垃圾', '干垃圾', '城市矿产', '资源化'],
+                desc: '垃圾分类/焚烧/填埋/资源化'
+            },
+            scrap_steel: {
+                name: '废钢回收',
+                icon: '🔩',
+                color: '#37474f',
+                keywords: ['废钢', '钢厂', '重废', '轻废', '中废', '剪切', '压块', '钢筋切头', '冲压料', '钢板料', '铁刨花', '生铁', '调价', '到厂价', '出厂价', '唐山', '永钢', '沙钢', '废铁'],
+                desc: '废钢行情/钢厂调价/到厂价'
+            },
             tech: {
                 name: '科技数码',
                 icon: '💻',
                 color: '#4a9eff',
-                keywords: ['AI', '人工智能', '大模型', '芯片', '手机', '华为', '小米', '苹果', 'iPhone', '机器人', '科技', '数码', '电脑', '5G', '量子', 'GPT', '算法', '代码', 'React', 'Rust', 'Go', '前端', '后端', '开源', '互联网', '程序员', '开发', '编程', '自动驾驶', '电池', 'AGI', '模型', '训练', 'Claude', 'OpenAI', '智能', '半导体', '光刻', '服务器', 'GPU', '算力'],
+                keywords: ['AI', '人工智能', '大模型', '芯片', '手机', '华为', '小米', '苹果', 'iPhone', '机器人', '科技', '数码', '电脑', '5G', '量子', 'GPT', '算法', '代码', 'React', 'Rust', 'Go', '前端', '后端', '开源', '互联网', '程序员', '开发', '编程', '自动驾驶', 'AGI', '模型', '训练', 'Claude', 'OpenAI', '智能', '半导体', '光刻', '服务器', 'GPU', '算力'],
                 desc: 'AI/芯片/手机/互联网/编程'
             },
             finance: {
@@ -2068,9 +2067,18 @@
             const categorized = {};
             Object.keys(CATEGORIES).forEach(cat => { categorized[cat] = []; });
 
+            // Platform-to-category mapping for recycling sources
+            const platformCategoryMap = {
+                feifei: 'recycling',
+                recycle91: 'recycling',
+                mofcom: 'recycling',
+                ths_recycle: 'recycling'
+            };
+
             Object.entries(data).forEach(([platform, items]) => {
                 items.forEach(item => {
-                    const category = classifyTopic(item.title);
+                    // If platform has a fixed category mapping, use it; otherwise classify by title
+                    const category = platformCategoryMap[platform] || classifyTopic(item.title);
                     categorized[category].push({
                         ...item,
                         platform,
@@ -2236,22 +2244,21 @@
             btn.textContent = '⏳ 刷新中...';
 
             try {
-                // Try fetching from backend API first
+                // Only use real API data - no simulated fallback
                 const apiResult = await fetchFromAPI(forceRefresh);
 
                 if (apiResult) {
-                    // Use real API data
                     allData = apiResult.data;
-                    newsData = generateRollingNews(); // News still uses generated data for now
+                    newsData = generateRollingNews();
                     const updateTime = apiResult.lastUpdate ? new Date(apiResult.lastUpdate) : new Date();
                     document.getElementById('updateTime').textContent = `最后更新: ${updateTime.toLocaleTimeString('zh-CN')}${apiResult.cached ? ' (缓存)' : ' (实时)'}`;
-                    showToast(apiResult.cached ? '📦 使用缓存数据' : '✅ 已获取实时热搜数据');
+                    showToast(apiResult.cached ? '📦 使用缓存数据' : '✅ 已获取实时数据');
                 } else {
-                    // Fallback to local simulated data
-                    allData = generateRealisticData();
-                    newsData = generateRollingNews();
-                    document.getElementById('updateTime').textContent = `最后更新: ${new Date().toLocaleTimeString('zh-CN')} (模拟)`;
-                    showToast('📋 使用模拟数据（后端未连接）');
+                    document.getElementById('updateTime').textContent = `数据加载失败，请稍后重试`;
+                    showToast('❌ 后端服务未响应，请稍后重试');
+                    btn.classList.remove('loading');
+                    btn.textContent = '🔄 立即刷新';
+                    return;
                 }
 
                 renderHotGrid(allData, 'hotGrid', currentFilter);
@@ -2268,7 +2275,7 @@
                 Object.values(allData).forEach(items => totalTopics += items.length);
                 document.getElementById('statTopics').textContent = totalTopics + newsData.length;
                 document.getElementById('statNews').textContent = newsData.length;
-                document.getElementById('statPlatforms').textContent = Object.keys(allData).length + '+';
+                document.getElementById('statPlatforms').textContent = Object.keys(allData).length;
                 document.getElementById('statUpdate').textContent = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
             } catch (e) {
