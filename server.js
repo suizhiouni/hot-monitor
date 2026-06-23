@@ -45,9 +45,9 @@ async function fetchWeibo() {
         const data = await res.json();
         if (data?.code === 200 && data?.data) {
             return data.data.slice(0, 15).map((item, i) => ({
-                title: item.title || item.name,
-                heat: item.hot || item.hotness || 0,
-                url: item.url || `https://s.weibo.com/weibo?q=%23${encodeURIComponent(item.title || item.name)}%23`,
+                title: item.title || item.name || item.word,
+                heat: item.hot_value || item.hot || item.hotness || 0,
+                url: item.link || item.url || `https://s.weibo.com/weibo?q=%23${encodeURIComponent(item.title || item.name)}%23`,
                 tag: i < 3 ? 'hot' : (item.tag === 'new' || item.isNew) ? 'new' : ''
             }));
         }
@@ -76,9 +76,9 @@ async function fetchBaidu() {
         if (data?.code === 200 && data?.data) {
             return data.data.slice(0, 15).map(item => ({
                 title: item.title || item.name,
-                heat: item.hot || item.hotness || 0,
+                heat: item.score || item.hot_value || item.hot || 0,
                 url: item.url || `https://www.baidu.com/s?wd=${encodeURIComponent(item.title || item.name)}`,
-                tag: ''
+                tag: item.type_desc === '新' ? 'new' : item.type_desc === '热' ? 'hot' : ''
             }));
         }
     } catch (e) { console.log('Baidu (60s) fetch failed:', e.message); }
@@ -134,12 +134,20 @@ async function fetchZhihu() {
         const res = await safeFetch('https://60s.viki.moe/v2/zhihu');
         const data = await res.json();
         if (data?.code === 200 && data?.data) {
-            return data.data.slice(0, 15).map(item => ({
-                title: item.title || item.name,
-                heat: item.hot || item.hotness || 0,
-                url: item.url || `https://www.zhihu.com/question/${item.id}`,
-                tag: ''
-            }));
+            return data.data.slice(0, 15).map(item => {
+                // Parse heat from "2400 万热度" format
+                let heat = 0;
+                if (item.hot_value_desc) {
+                    const match = item.hot_value_desc.match(/([\d.]+)\s*万/);
+                    heat = match ? Math.round(parseFloat(match[1]) * 10000) : 0;
+                }
+                return {
+                    title: item.title || item.name,
+                    heat: heat || item.hot_value || item.hot || 0,
+                    url: item.link || item.url || `https://www.zhihu.com/question/${item.id}`,
+                    tag: ''
+                };
+            });
         }
     } catch (e) { console.log('Zhihu (60s) fetch failed:', e.message); }
     // Fallback: direct API
