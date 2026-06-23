@@ -156,6 +156,7 @@
             display: flex;
             animation: ticker 60s linear infinite;
             white-space: nowrap;
+            will-change: transform;
         }
 
         .ticker-item {
@@ -235,13 +236,13 @@
             border-radius: 16px;
             border: 1px solid var(--border-color);
             overflow: hidden;
-            transition: all 0.3s;
+            transition: border-color 0.2s, transform 0.2s;
+            contain: content;
         }
 
         .card:hover {
             border-color: rgba(74, 158, 255, 0.3);
             transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
 
         .card-header {
@@ -2095,12 +2096,15 @@
         function renderTicker(data) {
             const container = document.getElementById('tickerContent');
             let items = [];
+            // Limit to top 2 per platform, max 16 items total for performance
             Object.entries(data).forEach(([platform, list]) => {
-                list.slice(0, 3).forEach(item => {
-                    items.push(`<span class="ticker-item" onclick="window.open('${item.url}','_blank')">${PLATFORMS[platform]?.icon || '📌'} ${item.title}<span class="hot-value">${formatHeat(item.heat)}</span></span>`);
+                list.slice(0, 2).forEach(item => {
+                    if (items.length < 16) {
+                        items.push(`<span class="ticker-item" onclick="window.open('${item.url}','_blank')">${PLATFORMS[platform]?.icon || '📌'} ${item.title}<span class="hot-value">${formatHeat(item.heat)}</span></span>`);
+                    }
                 });
             });
-            // Duplicate for seamless scroll
+            // Single duplication for seamless scroll (not triple)
             container.innerHTML = items.join('') + items.join('');
         }
 
@@ -2427,12 +2431,48 @@
         }
 
         // ===== Tab & Filter =====
+        let currentTab = 'all';
+        const renderedTabs = new Set(); // Track which tabs have been rendered
+
         function switchTab(tab) {
+            currentTab = tab;
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
             event.target.classList.add('active');
             document.getElementById(`tab-${tab}`).classList.add('active');
+
+            // Lazy render: only render tab content when first visited
+            renderActiveTab();
+        }
+
+        function renderActiveTab() {
+            if (!allData || Object.keys(allData).length === 0) return;
+
+            switch (currentTab) {
+                case 'all':
+                    renderHotGrid(allData, 'hotGrid', currentFilter);
+                    break;
+                case 'recycle':
+                    renderRecycleTab(allData);
+                    break;
+                case 'category':
+                    renderCategoryView(allData);
+                    break;
+                case 'news':
+                    renderNewsFeed(newsFilter);
+                    break;
+                case 'rising':
+                    renderRisingGrid(allData);
+                    break;
+                case 'ai':
+                    if (!renderedTabs.has('ai')) {
+                        const predictions = generateAIPredictions(allData);
+                        renderAIPredictions(predictions);
+                        renderedTabs.add('ai');
+                    }
+                    break;
+            }
         }
 
         function filterPlatform(platform) {
@@ -2486,15 +2526,10 @@
                     return;
                 }
 
-                renderHotGrid(allData, 'hotGrid', currentFilter);
-                renderRecycleTab(allData);
-                renderCategoryView(allData);
-                renderRisingGrid(allData);
+                // Only render the active tab + ticker for performance
+                renderedTabs.clear(); // Clear cache so tabs re-render with fresh data
                 renderTicker(allData);
-                renderNewsFeed(newsFilter);
-
-                const predictions = generateAIPredictions(allData);
-                renderAIPredictions(predictions);
+                renderActiveTab();
 
                 // Update stats
                 let totalTopics = 0;
@@ -2516,22 +2551,22 @@
         function startAutoRefresh() {
             // Main data refresh: every 2 hours (matches backend)
             autoRefreshTimer = setInterval(() => {
-                refreshAll(true); // Force refresh from backend
+                refreshAll(true);
             }, 2 * 60 * 60 * 1000); // 2 hours
 
-            // Also do a lighter check every 5 minutes for cached data
+            // Lighter cache check every 10 minutes (was 5 min, reduced frequency)
             setInterval(() => {
                 refreshAll(false);
-            }, 5 * 60 * 1000); // 5 minutes
+            }, 10 * 60 * 1000); // 10 minutes
 
-            // News feed updates more frequently (every 30s)
+            // News feed updates every 60s only when tab is active (was 30s)
             newsRefreshTimer = setInterval(() => {
-                if (document.getElementById('tab-news').classList.contains('active')) {
+                if (currentTab === 'news') {
                     newsData = generateRollingNews();
                     renderNewsFeed(newsFilter);
                     showToast('📡 发现新内容');
                 }
-            }, 30000);
+            }, 60000);
         }
 
         // ===== Init =====
